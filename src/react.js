@@ -1,13 +1,13 @@
 /**
- * <AgentHive> — lớp React mỏng bọc createAgentHive.
+ * <AgentHive> — thin React wrapper around createAgentHive.
  *
- *   <AgentHive agents={ds} onSelect={id => …} style={{ height: 480 }} />
+ *   <AgentHive agents={list} language="en" onSelect={id => …} style={{ height: 480 }} />
  *
- * Tuỳ chọn khởi tạo (layout, fps, bong, nhanVienPhu…) chỉ đọc LẦN ĐẦU — đổi thì đổi `key` để dựng lại.
- * `agents` đổi ⇒ gọi setAgents (rẻ: chỉ nhân vật đổi trạng thái mới đi lại). `onReady(api)` để gọi pushEvent / focus / setZoom.
+ * Init options (layout, fps, shadows, extraStaff…) are read ONCE — change `key` to re-create. When `agents` changes we call
+ * setAgents (cheap: only agents whose status changed move). `onReady(api)` gives access to pushEvent / focus / setZoom.
  *
- * Viết bằng React.createElement, KHÔNG JSX: gói xuất thẳng mã nguồn, file .jsx thô làm vỡ Next.js không bật
- * transpilePackages, webpack không babel node_modules, hoặc SSR chạy bằng Node.
+ * Written with React.createElement, not JSX: the package ships its source as-is, and raw .jsx would break Next.js without
+ * transpilePackages, webpack setups that don't run babel on node_modules, or SSR under plain Node.
  */
 import React, { useEffect, useRef } from 'react';
 import { createAgentHive } from './index.js';

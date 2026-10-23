@@ -12,18 +12,18 @@ Made by **[Beeknoee](https://beeknoee.com)**.
 |---|---|
 | ![day](docs/day.png) | ![night](docs/night.png) |
 
-*[Tiếng Việt ở cuối trang](#tiếng-việt)*
+**English** · [Tiếng Việt](#tiếng-việt)
 
 ---
 
 ## Features
 
-- **Status → behaviour.** Feed it a snapshot of your agents and they walk to the right place on their own: desk, meeting room, café, or the alert ring around the planter.
+- **Status → behaviour.** Give it a snapshot of your agents and they walk to the right place on their own: desk, meeting room, café, or the alert ring around the planter.
 - **Readable at a glance.** Name pills with a status dot and a model badge (Haiku → `HK`, Sonnet → `SN`, Opus → `OP`, …). Up to 3 speech bubbles at once, most urgent first. Labels avoid overlapping. Click a person **or their label** to select them.
-- **Lively, not noisy.** Optional extra staff: a security guard on patrol, a technician, and a barista who brews coffee and carries steaming cups to the tables.
+- **Lively, not noisy.** Optional extra staff: a security guard on patrol, a technician, and a barista who carries steaming coffee to the tables.
 - **Light.** At most 30 fps. Pauses when the tab is hidden or the canvas is off-screen. Static scene merged by material (about 66 draw calls). Respects `prefers-reduced-motion`. `dispose()` releases the WebGL context.
-- **Optional night bloom** (`chatLuong: 'cao'`) for full-screen use. It turns itself off on slow machines.
-- **Vietnamese or English UI** (`ngonNgu: 'en'`). Every label can be overridden.
+- **Optional night bloom** (`quality: 'high'`) for full-screen use. It turns itself off on slow machines.
+- **English or Vietnamese UI.** The API has English names; the original Vietnamese names work too.
 - **Clean licence.** No third-party 3D assets, fonts or brand logos are bundled.
 
 ## Requirements
@@ -43,7 +43,7 @@ npm install three github:beeknoee/agent-hive
 
 You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.0`.
 
-## Quick start (vanilla JS)
+## Quick start
 
 ```html
 <div id="office" style="height: 520px"></div>
@@ -53,21 +53,21 @@ You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.0`.
 import { createAgentHive } from 'agent-hive';
 
 const hive = createAgentHive(document.getElementById('office'), {
-  ngonNgu: 'en',          // UI language: 'vi' (default) | 'en'
-  chuThich: true,         // status legend, bottom-left
-  nhanVienPhu: 10,        // extra staff walking around
+  language: 'en',
+  legend: true,
   onSelect: (id) => console.log('clicked', id),   // null when clicking empty space
 });
 
 hive.setAgents([
-  { id: 'ceo', ten: 'Chief AI', vaiTro: 'chief', trangThai: 'dang_chay', model: 'claude-opus-5-5' },
-  { id: 'ads', ten: 'Ads Optimizer', phong: 'marketing', trangThai: 'dang_chay', viec: 'Tune ad campaign' },
-  { id: 'ops', ten: 'Infra Watch', phong: 'ha-tang', trangThai: 'loi', viec: 'Disk full' },
-  { id: 'inbox', ten: 'Inbox Bot', phong: 'khach-hang', trangThai: 'can_xu_ly', viec: '3 messages need a human' },
+  { id: 'ceo',   name: 'Chief AI',      role: 'chief',      status: 'running', model: 'claude-opus-5-5' },
+  { id: 'ads',   name: 'Ads Optimizer', room: 'marketing',  status: 'running', task: 'Tune ad campaign' },
+  { id: 'ops',   name: 'Infra Watch',   room: 'infra',      status: 'error',   task: 'Disk full' },
+  { id: 'inbox', name: 'Inbox Bot',     room: 'customers',  status: 'needs_attention', task: '3 messages need a human' },
+  { id: 'tax',   name: 'Tax Helper',    room: 'finance',    status: 'idle' },
 ]);
 
 // Call setAgents again whenever your data changes. Only agents whose status changed will move.
-hive.pushEvent({ agentId: 'ads', loai: 'xong' });   // optional: a little jump of joy, then off to the café
+hive.pushEvent({ agentId: 'ads', type: 'done' });   // optional: a jump of joy, then off to the café
 ```
 
 ## React
@@ -79,8 +79,8 @@ export function Office({ agents }) {
   return (
     <AgentHive
       agents={agents}
-      ngonNgu="en"
-      chuThich
+      language="en"
+      legend
       onSelect={(id) => openDetails(id)}
       onReady={(api) => api.focus('ceo')}
       style={{ height: 520 }}
@@ -89,52 +89,56 @@ export function Office({ agents }) {
 }
 ```
 
-Init options are read **once**. To apply new options, change the component's `key`. The `agents` prop can change freely. The component is written without JSX, so it works in Next.js without `transpilePackages`.
+Options are read **once**. To apply new options, change the component's `key`. The `agents` prop can change freely. The component is written without JSX, so it works in Next.js without `transpilePackages`.
 
-## Agent data
+## Agent
 
-Field names are Vietnamese. Here is what they mean:
-
-| Field | Type | Meaning |
+| Field | Type | Description |
 |---|---|---|
 | `id` | string | Stable id. Appearance (gender, skin, hair, outfit) is generated deterministically from it. |
-| `ten` | string | Name shown on the label. |
-| `trangThai` | status | See the table below. |
-| `phong` | string | Room / zone id for the default layout: `khach-hang` (customers) · `marketing` · `tai-chinh` (finance) · `code` · `ha-tang` (infra) · `qa` · `thu-vien` (AI lab) · `bd` (business dev). |
-| `vaiTro` | `'chief'` \| `'staff'` \| `'bot'` | `chief` sits at the private CEO desk in the AI lab. |
-| `viec` | string | Current task, shown in a speech bubble (≤ 40 chars is best). |
-| `model` | string \| object | Optional model badge. Pass an id string (`'claude-sonnet-5-5'`, `'gpt-…'`, `'gemini-…'`) or `{ id, ngan, hang, logo }`. No brand logos are bundled; pass your own `logo` URL, or a coloured letter tile is drawn. |
-| `ngoaiHinh` | object | Optional appearance override: `{ gioi, da, toc, trangPhuc, ao, quan, kinh, … }` (see `src/index.d.ts`). |
+| `name` | string | Label text. |
+| `status` | string | `idle` · `running` · `awaiting_approval` · `error` · `needs_attention` · `off` (see below). |
+| `room` | string | Zone of the default layout: `customers` · `marketing` · `finance` · `code` · `infra` · `qa` · `lab` · `bd`. |
+| `role` | `'chief'` \| `'staff'` \| `'bot'` | `chief` sits at the private CEO desk in the AI lab. |
+| `task` | string | Current task, shown in a speech bubble (≤ 40 characters is best). |
+| `model` | string \| object | Optional model badge. Pass an id (`'claude-sonnet-5-5'`, `'gpt-…'`, `'gemini-…'`) or `{ id, name, short, provider, logo }`. No brand logos are bundled; pass your own `logo` URL, otherwise a coloured letter tile is drawn. |
+| `appearance` | object | Optional override: `{ gender, skin, hair: { style, color }, outfit, shirt, pants, glasses, height }`. See `src/index.d.ts` for values. |
 
-| `trangThai` | Meaning | Where they go |
-|---|---|---|
-| `ranh` | idle | café |
-| `dang_chay` | running | their desk, typing |
-| `cho_duyet` | awaiting approval | meeting room |
-| `loi` | error | around the central planter, blinking red dot |
-| `can_xu_ly` | needs a human | around the central planter, blinking red dot |
-| `tat` | turned off | café, faded |
+| `status` | Where the agent goes |
+|---|---|
+| `idle` | café |
+| `running` | their desk, typing |
+| `awaiting_approval` | meeting room |
+| `error` | the planter, with a blinking red dot |
+| `needs_attention` | the planter, with a blinking red dot |
+| `off` | café, faded |
 
-`pushEvent({ agentId, loai })` takes `loai` ∈ `bat_dau` (start) · `xong` (done) · `loi` (error) · `cho_duyet` · `duyet` (approved) · `can_xu_ly`.
+`pushEvent({ agentId, type, task? })` applies one change without a full snapshot. `type` is one of:
+- `start`
+- `done` (also plays a jump)
+- `error`
+- `awaiting_approval`
+- `approved`
+- `needs_attention`
 
 ## Options
 
 | Option | Default | Description |
 |---|---|---|
-| `ngonNgu` | `'vi'` | UI language for the HUD, legend, bubble prefixes and default room names: `'vi'` or `'en'`. |
-| `chu` | – | Override individual UI strings, e.g. `{ can: 'Needs you' }`. Keys are listed in `ChuGiaoDien` in `src/index.d.ts`. |
-| `layout` | `LAYOUT_MAC_DINH` / `LAYOUT_EN` | Your own islands, zones and bridges. |
-| `bong` | `false` | Real-time shadows. Prettier and heavier, best for full-screen. |
-| `chatLuong` | `'thuong'` | `'cao'` enables night bloom (lazy-loaded, auto-disabled under ~22 fps). |
-| `nhanVienPhu` | `10` | Extra staff without an agent (0–40). |
-| `chuThich` | `false` | Status legend. |
-| `hud` | `true` | Clock (`DAWN` / `DAY` / `DUSK` / `NIGHT · 17:42`) and headcount. |
-| `dieuKhien` | `true` | Drag to pan, wheel to zoom. |
-| `zoomCuon` | `'luon'` | `'ctrl'`: zoom only with Ctrl/⌘ + wheel. Use it when the office is a card inside a long scrolling page. |
+| `language` | `'vi'` | UI language for the HUD, legend, bubble prefixes and default room names: `'en'` or `'vi'`. |
+| `labels` | – | Override UI strings, e.g. `{ needsAttention: 'Needs you', roles: { barista: 'Coffee' } }`. See `Labels` in `src/index.d.ts`. |
+| `layout` | default layout | Your own islands, zones and bridges (see below). |
+| `shadows` | `false` | Real-time shadows. Prettier and heavier, best for full-screen. |
+| `quality` | `'normal'` | `'high'` adds night bloom (lazy-loaded, auto-disabled under ~22 fps). |
+| `extraStaff` | `10` | Extra staff without an agent (0–40). |
+| `legend` | `false` | Status legend, bottom-left. |
+| `hud` | `true` | Clock (`DAWN` / `DAY` / `DUSK` / `NIGHT · 17:42`) and headcount, top-left. |
+| `controls` | `true` | Drag to pan, wheel to zoom. |
+| `wheelZoom` | `'always'` | `'ctrl'`: zoom only with Ctrl/⌘ + wheel. Use it when the office is a card in a long page. |
 | `zoom` | `1` | Initial zoom. |
-| `tiLeNhan` | auto | Label scale. Shrinks automatically in short containers. |
+| `labelScale` | auto | Label scale. Shrinks automatically in short containers. |
 | `fps` | `30` | Frame-rate cap. |
-| `gio` | `() => new Date()` | Clock used for the sky. Handy for demos and screenshots. |
+| `clock` | `() => new Date()` | Clock for the sky. Handy for demos and screenshots. |
 | `onSelect` | – | `(id \| null) => void` |
 
 ## API
@@ -144,40 +148,64 @@ Field names are Vietnamese. Here is what they mean:
 | Method | Description |
 |---|---|
 | `setAgents(agents)` | Replace the snapshot. Agents missing from the list are removed. |
-| `pushEvent({ agentId, loai, viec? })` | Apply an event without a full snapshot: sets that agent's status (`xong` also plays a jump of joy). |
+| `pushEvent(event)` | Apply one event (see above). |
 | `focus(id)` | Smoothly move the camera to an agent. |
 | `select(id \| null)` | Highlight ring under an agent. |
-| `setZoom(z, x?, z?)` | Zoom, optionally around a point. |
-| `viTri(id)` | Current position `{ x, y, z, dao, khu, dangDi }`. |
-| `refreshSky()` | Recompute the sky now, e.g. after changing your `gio` clock. |
+| `setZoom(zoom, x?, z?)` | Zoom, optionally around a point. |
+| `position(id)` | `{ x, y, z, island, zone, walking }`, or `null`. |
+| `refreshSky()` | Recompute the sky now, e.g. after changing your `clock`. |
 | `info()` | Draw calls, triangles, fps cap, bloom state. |
 | `dispose()` | Remove everything and release the WebGL context. |
 
-Also exported: `LAYOUT_MAC_DINH`, `LAYOUT_EN`, `timDao`, `timKhu`, `bauTroi`, `nhanGio`, `buoiTheoGio`, `moTaModel`, `MAU_HANG`. Full types are in [`src/index.d.ts`](src/index.d.ts).
+Helpers:
+- `DEFAULT_LAYOUT` and `LAYOUT_EN`
+- `findIsland` and `findZone`
+- `skyAt`, `dayPhase` and `clockLabel`
+- `describeModel` and `PROVIDER_COLORS`
+
+Full types are in [`src/index.d.ts`](src/index.d.ts).
 
 ## Custom layout
 
-A layout has `dao` (islands), `khu` (zones on islands) and `cau` (bridges). The easiest way is to start from the default and rename or move things:
+A layout has islands, zones on those islands, and bridges between islands. Zone types:
+- `desks`
+- `cafe`
+- `meeting`
+- `podium`
+- `ceo`
+- `servers`
+- `alert`: the ring where `error` / `needs_attention` agents gather
 
 ```js
-import { createAgentHive, LAYOUT_EN } from 'agent-hive';
-
-const layout = {
-  ...LAYOUT_EN,
-  dao: LAYOUT_EN.dao.map(d => (d.id === 'thu-vien' ? { ...d, ten: 'RESEARCH · CEO' } : d)),
-  khu: LAYOUT_EN.khu.map(k => (k.id === 'marketing' ? { ...k, ten: 'GROWTH' } : k)),
-};
-createAgentHive(el, { layout, ngonNgu: 'en' });
+createAgentHive(el, {
+  language: 'en',
+  layout: {
+    islands: [
+      { id: 'main', name: 'MAIN OFFICE', x: 0, z: 0, w: 18, d: 12 },
+      { id: 'cafe', name: 'CAFÉ', x: 0, z: 15, w: 11, d: 11, round: true },
+    ],
+    zones: [
+      { id: 'dev',   island: 'main', name: 'DEV',   type: 'desks', x: -4, z: 0, cols: 2, rows: 2 },
+      { id: 'ops',   island: 'main', name: 'OPS',   type: 'desks', x: 4,  z: 0, cols: 2, rows: 2 },
+      { id: 'alert', island: 'main',                type: 'alert', x: 0,  z: 0 },
+      { id: 'cafe',  island: 'cafe',                type: 'cafe',  x: 0,  z: 15 },
+    ],
+    bridges: [{ from: 'main', to: 'cafe' }],
+  },
+});
+// then agents use room: 'dev' / 'ops'
 ```
 
-Zone types (`khu.loai`):
-- `ban`: desks
-- `cafe`: café tables
-- `hop`: meeting room
-- `buc`: podium
-- `ceo`: CEO desk
-- `may`: server racks
-- `bao`: the alert ring around the planter
+To rename rooms of the default layout, map over `LAYOUT_EN`:
+
+```js
+import { LAYOUT_EN } from 'agent-hive';
+const layout = { ...LAYOUT_EN, khu: LAYOUT_EN.khu.map(z => (z.id === 'marketing' ? { ...z, ten: 'GROWTH' } : z)) };
+```
+
+The built-in layouts use the internal field names: `dao` = islands, `khu` = zones, `ten` = name.
+
+If a layout has no `meeting` zone, `awaiting_approval` agents stay at their desk; without an `alert` zone, `error` agents stay where they are.
 
 Seats are stable: once given, a seat never moves. If a zone overflows, late arrivals stand beside the desks, always inside the island.
 
@@ -188,25 +216,35 @@ git clone https://github.com/beeknoee/agent-hive.git
 cd agent-hive
 npm install
 npm run demo     # http://localhost:5190
-npm test         # logic tests (paths, seating, appearance, model badges, sky, exports)
+npm test         # unit tests (paths, seating, appearance, model badges, sky, English API, exports)
 ```
 
-Demo URL flags: `?en` for English, `?cao` for night bloom, `?gio=17.7` to fix the clock (17:42).
-
-Project layout:
+Demo URL flags: `?lang=vi` for Vietnamese UI, `?bloom` for night bloom, `?hour=17.7` to fix the clock at 17:42.
 
 ```
-src/index.js        createAgentHive: renderer, camera, loop, agents, picking
-src/react.js        <AgentHive> React wrapper
-src/core/layout.js  islands, zones, seats, walking graph
-src/core/canh.js    static scene (floors, furniture, LEDs, clouds)
-src/core/nhanVat.js characters · ngoaiHinh.js appearance · nhan.js labels & bubbles
-src/core/quanCafe.js barista + steaming cups · cho.js seat manager · troi.js sky
-demo/               demo page with fake data
-test/               node:test unit tests
+src/
+  index.js            createAgentHive: renderer, camera, render loop, agents, picking
+  react.js            <AgentHive> React wrapper
+  index.d.ts          TypeScript types (English + Vietnamese names)
+  core/
+    aliases.js        English API → internal names
+    layout.js         islands, zones, seats, walking graph
+    seats.js          seat manager (stable seats, extra staff give way)
+    scene.js          static scene: floors, furniture, LED trims, clouds
+    textures.js       canvas textures (wood, glass, sign plates, skyline)
+    character.js      people: body, walking, alert dot
+    appearance.js     deterministic appearance from id
+    labels.js         name pills and speech bubbles
+    declutter.js      label overlap avoidance
+    cafe.js           barista + steaming cups
+    sky.js            time-of-day sky
+    bloom.js          optional night bloom
+    model.js          model badges
+demo/                 demo page with fake data
+test/                 node:test unit tests
 ```
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+The internals and code comments use Vietnamese names, the authors' language. The public API is available in English. Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
@@ -226,19 +264,21 @@ Trời đổi theo giờ thật: bình minh, ngày, chiều, đêm bật đèn.
 
 Sản phẩm mã nguồn mở của **[Beeknoee](https://beeknoee.com)**, giấy phép MIT.
 
-**Cài:**
+### Cài
 
 ```bash
 npm install three github:beeknoee/agent-hive
 ```
 
-**Dùng:**
+### Dùng
+
+API có tên tiếng Anh như phần trên. Tên tiếng Việt gốc vẫn dùng được, hai kiểu viết trộn lẫn được:
 
 ```js
 import { createAgentHive } from 'agent-hive';
 
 const hive = createAgentHive(document.getElementById('van-phong'), {
-  chuThich: true,
+  chuThich: true,             // = legend
   onSelect: (id) => console.log('bấm vào', id),
 });
 hive.setAgents([
@@ -247,16 +287,23 @@ hive.setAgents([
 ]);
 ```
 
-Dữ liệu mỗi agent:
-- `id`, `ten`
-- `phong`: khu làm việc
-- `trangThai`: `ranh` · `dang_chay` · `cho_duyet` · `loi` · `can_xu_ly` · `tat`
-- `viec`: bóng chữ
-- `model`: huy hiệu model
-- `ngoaiHinh`: ghi đè ngoại hình
+| Tiếng Anh | Tiếng Việt |
+|---|---|
+| `name` · `status` · `room` · `role` · `task` · `appearance` | `ten` · `trangThai` · `phong` · `vaiTro` · `viec` · `ngoaiHinh` |
+| `idle` · `running` · `awaiting_approval` · `error` · `needs_attention` · `off` | `ranh` · `dang_chay` · `cho_duyet` · `loi` · `can_xu_ly` · `tat` |
+| phòng `customers` · `finance` · `infra` · `lab` | `khach-hang` · `tai-chinh` · `ha-tang` · `thu-vien` |
+| `language` · `labels` · `shadows` · `quality: 'high'` · `extraStaff` · `legend` · `controls` · `wheelZoom` · `labelScale` · `clock` | `ngonNgu` · `chu` · `bong` · `chatLuong: 'cao'` · `nhanVienPhu` · `chuThich` · `dieuKhien` · `zoomCuon` · `tiLeNhan` · `gio` |
+| sự kiện `type: 'done'` · `task` | `loai: 'xong'` · `viec` |
+| `position(id)` | `viTri(id)` |
 
-Tuỳ chọn và API xem các bảng ở trên.
+Mặc định giao diện là tiếng Việt (`language: 'vi'`).
 
-Chạy demo: `npm install` rồi `npm run demo`, mở http://localhost:5190. Thêm `?en` cho tiếng Anh, `?cao` để bật toả sáng ban đêm, `?gio=17.7` để cố định giờ.
+### Chạy demo
+
+`npm install` rồi `npm run demo`, mở http://localhost:5190?lang=vi.
+
+Tham số:
+- `?bloom`: bật toả sáng ban đêm.
+- `?hour=17.7`: cố định giờ.
 
 Kiểm thử: `npm test`.

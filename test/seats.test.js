@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LAYOUT_MAC_DINH as L, dungDoThi, loTrinhDayDu, loTrinhDoiDich, choNgoi, timDao, timKhu, dauCau, BAN_CAFE, QUAY_CAFE } from '../src/core/layout.js';
-import { taoQuanLyCho, TIEN_TO_PHU } from '../src/core/cho.js';
+import { taoQuanLyCho, TIEN_TO_PHU } from '../src/core/seats.js';
 
 const xz = (p) => ({ x: +p.x.toFixed(6), z: +p.z.toFixed(6) });
 const trongDaoChua = (dao, p, le = 0.3) => (dao.tron
     ? Math.hypot(p.x - dao.x, p.z - dao.z) <= Math.min(dao.w, dao.d) / 2 - le
     : Math.abs(p.x - dao.x) <= dao.w / 2 - le && Math.abs(p.z - dao.z) <= dao.d / 2 - le);
 
-test('chỗ thứ i KHÔNG đổi khi khu đông thêm (không căn giữa lại — bàn canh.js dựng cố định)', () => {
+test('chỗ thứ i KHÔNG đổi khi khu đông thêm (không căn giữa lại — bàn scene.js dựng cố định)', () => {
     for (const k of L.khu) {
         const dao = timDao(L, k.dao);
         const it = choNgoi(k, 1, dao);

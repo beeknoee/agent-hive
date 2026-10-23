@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bauTroi, nhanGio, buoiTheoGio } from '../src/core/troi.js';
+import { bauTroi, nhanGio, buoiTheoGio } from '../src/core/sky.js';
 
 const luc = (h, m = 0) => { const d = new Date(2026, 0, 1); d.setHours(h, m, 0, 0); return d; };
 

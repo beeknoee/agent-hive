@@ -140,12 +140,12 @@ function themChoDu(ds, p, dao) {
  * Bàn: lưới cot × hang cụm bàn đôi, người ngồi phía nam của bàn quay mặt về bắc (về màn hình).
  *
  * BẤT BIẾN: chỗ thứ i KHÔNG phụ thuộc soNguoi — gọi lại với số lớn hơn chỉ NỐI THÊM chỗ dư phía sau, chỗ cũ giữ
- * nguyên. Bản trước căn giữa lại cả lưới khi đông người ⇒ mọi người lệch khỏi bàn canh.js đã dựng, không bao giờ về lại.
+ * nguyên. Bản trước căn giữa lại cả lưới khi đông người ⇒ mọi người lệch khỏi bàn scene.js đã dựng, không bao giờ về lại.
  * Chỗ CHUẨN (có bàn/ghế thật) = choNgoi(khu, 1).length; chỗ dư là chỗ ĐỨNG (không `ban`/`ngoi`), kéo vào trong đảo nếu có `dao`.
  */
 export function choNgoi(khu, soNguoi = 1, dao = null) {
     const ds = [];
-    // y = mặt bục (canh.js dựng bục cao 0,22) — không có thì Chief đứng lún vào trong bục
+    // y = mặt bục (scene.js dựng bục cao 0,22) — không có thì Chief đứng lún vào trong bục
     if (khu.loai === 'bao') {
         // Vòng quanh bồn hoa (bán kính bồn 1,25 + lá): r = 2,05, ô ĐẦU TIÊN ở phía camera (+x+z), rồi xen kẽ hai bên;
         // đứng QUAY MẶT RA (về phía người xem) như đang chờ. 8 ô cách nhau ~1,5; đông hơn ⇒ vòng ngoài r = 2,9 (ngoài hành lang 2,6)
@@ -160,7 +160,7 @@ export function choNgoi(khu, soNguoi = 1, dao = null) {
         return ds;
     }
     if (khu.loai === 'ceo') {
-        // Bàn CEO (canh.js): CEO NGỒI sau bàn, quay mặt +z (về phía camera); vào ghế từ bên trái sau bàn — không đi xuyên bàn
+        // Bàn CEO (scene.js): CEO NGỒI sau bàn, quay mặt +z (về phía camera); vào ghế từ bên trái sau bàn — không đi xuyên bàn
         ds.push({ x: khu.x, z: khu.z - 0.75, huong: 0, ngoi: true, ban: true, loi: [{ x: khu.x - 1.7, z: khu.z - 0.75 }] });
         // Người thứ hai trở đi (khách / chief thứ hai): đứng trước bàn
         for (let i = 1; i < soNguoi; i++) {
@@ -202,7 +202,7 @@ export function choNgoi(khu, soNguoi = 1, dao = null) {
         return ds;
     }
     if (khu.loai === 'cafe') {
-        // Bàn tròn nhỏ, mỗi bàn 4 ghế (BAN_CAFE — canh.js dựng đúng các bàn này)
+        // Bàn tròn nhỏ, mỗi bàn 4 ghế (BAN_CAFE — scene.js dựng đúng các bàn này)
         for (const [bx, bz] of BAN_CAFE) {
             for (let i = 0; i < 4; i++) {
                 const g = (i / 4) * Math.PI * 2 + Math.PI / 4;
@@ -230,7 +230,7 @@ export function choNgoi(khu, soNguoi = 1, dao = null) {
         return ds;
     }
     if (khu.loai === 'hop') {
-        // NGỒI quanh bàn họp (6 ghế — canh.js), quay mặt vào bàn. huong = góc quay quanh Y để mặt (+z cục bộ)
+        // NGỒI quanh bàn họp (6 ghế — scene.js), quay mặt vào bàn. huong = góc quay quanh Y để mặt (+z cục bộ)
         // nhìn về tâm bàn: hướng nhìn (−cos g, −sin g) ⇒ atan2(−cos g, −sin g).
         for (let i = 0; i < 6; i++) {
             const g = (i / 6) * Math.PI * 2;
@@ -373,15 +373,27 @@ export function loTrinhDoiDich(doThi, daoDuPhong, diemKe, cho) {
  * Chief luôn ở khu `chief` (mặc định: bàn CEO trong AI Lab).
  */
 export function khuDich(agent, layout = LAYOUT_MAC_DINH) {
-    if (agent.vaiTro === 'chief') return 'chief';
+    const cafe = khuTheoLoai(layout, 'cafe', 'cafe');
+    const ban = timKhu(layout, agent.phong) ? agent.phong : null;
+    if (agent.vaiTro === 'chief') { const ceo = khuTheoLoai(layout, 'ceo', 'chief'); if (ceo) return ceo; }
+    // Khu tìm theo LOẠI (layout tự tạo đặt id gì cũng được); layout mặc định khớp đúng id cũ: chief · hop · canh-bao · cafe
+    const hop = khuTheoLoai(layout, 'hop', 'hop');
+    const bao = khuTheoLoai(layout, 'bao', 'canh-bao');
     switch (agent.trangThai) {
-        case 'dang_chay': return timKhu(layout, agent.phong) ? agent.phong : 'cafe';
-        case 'cho_duyet': return 'hop';
+        case 'dang_chay': return ban || cafe;
+        case 'cho_duyet': return hop || ban || cafe;
         // Lỗi / cần chủ xử lý ⇒ ra khu CẢNH BÁO (bồn hoa giữa) nếu layout có; không có thì lỗi đứng nguyên, cần xử lý sang phòng họp
-        case 'loi': return timKhu(layout, 'canh-bao') ? 'canh-bao' : null;
-        case 'can_xu_ly': return timKhu(layout, 'canh-bao') ? 'canh-bao' : 'hop';
-        default: return 'cafe';
+        case 'loi': return bao;
+        case 'can_xu_ly': return bao || hop;
+        default: return cafe;
     }
+}
+
+/** Id khu cho một LOẠI khu: ưu tiên khu có id `uuTien` (đúng loại), không thì khu đầu tiên thuộc loại đó; không có ⇒ null. */
+export function khuTheoLoai(layout, loai, uuTien) {
+    const k = timKhu(layout, uuTien);
+    if (k && k.loai === loai) return k.id;
+    return layout.khu.find(x => x.loai === loai)?.id ?? null;
 }
 
 export { timDao, timKhu };

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { giaiChong } from '../src/core/giaiChong.js';
+import { giaiChong } from '../src/core/declutter.js';
 
 const de = (a, b) => !(a.x + a.w / 2 <= b.x - b.w / 2 || a.x - a.w / 2 >= b.x + b.w / 2
     || a.y - a.d <= b.y - b.d - b.h || a.y - a.d - a.h >= b.y - b.d);

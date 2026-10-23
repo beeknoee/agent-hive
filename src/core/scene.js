@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { choNgoi, dauCau, timDao, BAN_CAFE, QUAY_CAFE, gheQuayCafe } from './layout.js';
-import { texGo, texQuang, texBong, texMay, texBienTen, texBieuDo, texTranh, ngauNhien } from './hoaTiet.js';
+import { texGo, texQuang, texBong, texMay, texBienTen, texBieuDo, texTranh, ngauNhien } from './textures.js';
 
 const M = (mau, o = {}) => new THREE.MeshStandardMaterial({ color: mau, roughness: 0.85, metalness: 0, flatShading: true, ...o });
 const SANG = (mau, o = {}) => new THREE.MeshBasicMaterial({ color: mau, ...o });   // tự phát sáng (không chịu ánh sáng)
@@ -341,17 +341,20 @@ export function dungCanh(layout, o = {}) {
             viTriDen.push(p.x + vx, 2.62, p.z + vz);
             vetDen.them(p.x + vx * 6, 0.015, p.z + vz * 6, 0, 3.6, 3.6, 1, -Math.PI / 2);   // vệt sáng hắt xuống sàn
         }
-        // Đảo chính không có bục Chief (CEO ngồi phòng riêng ở AI Lab) ⇒ giữa đảo là BỒN CÂY tròn + vòng vàng xoay
-        if (d.id === 'chinh' && !layout.khu.some(k => k.dao === d.id && k.loai === 'buc')) {
-            dat(new THREE.CylinderGeometry(1.15, 1.25, 0.42, 16), vat.goTham, d.x, 0.21, d.z);
-            dat(new THREE.TorusGeometry(1.2, 0.035, 4, 40), vat.ledAm, d.x, 0.43, d.z).rotation.x = Math.PI / 2;
-            for (let i = 0; i < 7; i++) { const g = (i / 7) * Math.PI * 2; laBon.them(d.x + Math.cos(g) * 0.75, 0.62, d.z + Math.sin(g) * 0.75, g, 1.3, 1.3, 1.3); }
-            la.them(d.x, 1.15, d.z, 0.4, 1.7, 2, 1.7);
+        // BỒN CÂY tròn + vòng vàng xoay ở mỗi khu CẢNH BÁO (`bao`) của đảo — agent lỗi / cần xử lý đứng quanh đây.
+        // Layout cũ không có khu `bao`: đảo chính không có bục Chief ⇒ bồn ở giữa đảo như trước.
+        const bonCay = layout.khu.filter(k => k.dao === d.id && k.loai === 'bao').map(k => ({ x: k.x, z: k.z }));
+        if (!bonCay.length && d.id === 'chinh' && !layout.khu.some(k => k.dao === d.id && k.loai === 'buc')) bonCay.push({ x: d.x, z: d.z });
+        for (const c of bonCay) {
+            dat(new THREE.CylinderGeometry(1.15, 1.25, 0.42, 16), vat.goTham, c.x, 0.21, c.z);
+            dat(new THREE.TorusGeometry(1.2, 0.035, 4, 40), vat.ledAm, c.x, 0.43, c.z).rotation.x = Math.PI / 2;
+            for (let i = 0; i < 7; i++) { const g = (i / 7) * Math.PI * 2; laBon.them(c.x + Math.cos(g) * 0.75, 0.62, c.z + Math.sin(g) * 0.75, g, 1.3, 1.3, 1.3); }
+            la.them(c.x, 1.15, c.z, 0.4, 1.7, 2, 1.7);
             for (const [rx, rz, tg] of [[1.2, 0, 0.35], [0, 1.2, -0.28]]) {
-                const v = dat(new THREE.TorusGeometry(1.25, 0.03, 4, 48), vat.vang, d.x, 1.35, d.z, 0, false);
+                const v = dat(new THREE.TorusGeometry(1.25, 0.03, 4, 48), vat.vang, c.x, 1.35, c.z, 0, false);
                 v.rotation.set(rx, rz, 0); v.userData.dong = true; dong.push({ o: v, xoay: [0, tg, 0] });
             }
-            bong(d.x, d.z, 3.4, 3.4);
+            bong(c.x, c.z, 3.4, 3.4);
         }
         // Cây ở 2 góc
         for (const p of [pts[Math.floor(pts.length * 0.2)], pts[Math.floor(pts.length * 0.7)]]) {

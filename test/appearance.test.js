@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ngoaiHinh, MAU_DA, TRANG_PHUC } from '../src/core/ngoaiHinh.js';
+import { ngoaiHinh, MAU_DA, TRANG_PHUC } from '../src/core/appearance.js';
 
 test('cùng id ⇒ cùng ngoại hình (ổn định giữa các lần tải)', () => {
     assert.deepEqual(ngoaiHinh({ id: 'ads-optimizer', phong: 'marketing' }), ngoaiHinh({ id: 'ads-optimizer', phong: 'marketing' }));

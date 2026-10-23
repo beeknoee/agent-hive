@@ -1,24 +1,28 @@
 /**
- * agent-hive — văn phòng 3D low-poly cho đội AI agent.
+ * agent-hive — a low-poly 3D office for AI agent teams. Made by Beeknoee (https://beeknoee.com), MIT.
  *
- *   const hive = createAgentHive(divEl, { onSelect: id => … });
- *   hive.setAgents([{ id, ten, phong, trangThai, viec }]);      // ảnh chụp trạng thái — gọi lại mỗi lần dữ liệu đổi
- *   hive.pushEvent({ agentId, loai: 'xong' });                   // (tuỳ chọn) sự kiện ⇒ hoạt cảnh nhỏ (nhảy khi xong)
+ *   const hive = createAgentHive(div, { language: 'en', onSelect: id => … });
+ *   hive.setAgents([{ id, name, room, status, task }]);   // snapshot — call again whenever your data changes
+ *   hive.pushEvent({ agentId, type: 'done' });            // optional one-off event (jump of joy)
  *   hive.dispose();
  *
- * Ngân sách hiệu năng: ≤ 30 fps · dừng vẽ khi tab ẩn / khung khuất · prefers-reduced-motion ⇒ khung tĩnh.
+ * Performance budget: ≤ 30 fps · stop drawing when the tab is hidden / the canvas is off-screen · prefers-reduced-motion ⇒ still frames.
+ * Internals use Vietnamese names (ten = name, trangThai = status, phong = room, viec = task…); English input is translated
+ * in core/aliases.js. Code comments are in Vietnamese.
  */
 import * as THREE from 'three';
-import { LAYOUT_MAC_DINH, LAYOUT_EN, dungDoThi, loTrinh, loTrinhDayDu, loTrinhDoiDich, khuDich, timKhu, timDao } from './core/layout.js';
-import { taoQuanLyCho, TIEN_TO_PHU } from './core/cho.js';
-import { taoQuanCafe } from './core/quanCafe.js';
-import { dungCanh } from './core/canh.js';
-import { NhanVat } from './core/nhanVat.js';
-import { capNhatCo, LOP_NHAN } from './core/nhan.js';
-import { giaiChong, UU_TIEN } from './core/giaiChong.js';
-import { bauTroi, nhanGio, buoiTheoGio } from './core/troi.js';
-import { nenXa } from './core/hoaTiet.js';
-import { taoToaSang } from './core/toaSang.js';
+import { LAYOUT_MAC_DINH, LAYOUT_EN, khuTheoLoai, dungDoThi, loTrinh, loTrinhDayDu, loTrinhDoiDich, khuDich, timKhu, timDao } from './core/layout.js';
+import { taoQuanLyCho, TIEN_TO_PHU } from './core/seats.js';
+import { taoQuanCafe } from './core/cafe.js';
+import { dungCanh } from './core/scene.js';
+import { NhanVat } from './core/character.js';
+import { capNhatCo, LOP_NHAN } from './core/labels.js';
+import { giaiChong, UU_TIEN } from './core/declutter.js';
+import { bauTroi, nhanGio, buoiTheoGio } from './core/sky.js';
+import { nenXa } from './core/textures.js';
+import { taoToaSang } from './core/bloom.js';
+import { chuanHoaAgent, chuanHoaSuKien, chuanHoaTuyChon, viTriEn } from './core/aliases.js';
+import { moTaModel, MAU_HANG } from './core/model.js';
 
 export { LAYOUT_MAC_DINH, LAYOUT_EN, bauTroi, nhanGio, buoiTheoGio };
 
@@ -47,7 +51,8 @@ const CHU = {
  * @param {{ layout?: any, fps?: number, bong?: boolean, hud?: boolean, chuThich?: boolean, dieuKhien?: boolean, zoom?: number, nhanVienPhu?: number,
  *           gio?: () => Date, ngonNgu?: 'vi'|'en', onSelect?: (id:string|null) => void }} o
  */
-export function createAgentHive(khung, o = {}) {
+export function createAgentHive(khung, tuyChon = {}) {
+    const o = chuanHoaTuyChon(tuyChon);   // tuỳ chọn tiếng Anh (shadows, language, …) ⇒ tên nội bộ — core/aliases.js
     const layout = o.layout || (o.ngonNgu === 'en' ? LAYOUT_EN : LAYOUT_MAC_DINH);
     const fps = Math.min(60, Math.max(10, o.fps || 30));
     const layGio = o.gio || (() => new Date());
@@ -95,6 +100,7 @@ export function createAgentHive(khung, o = {}) {
     let toaSang = null; let bloomBat = false; let haCap = false; let emaKhung = 33; let soKhungCham = 0;
     scene.add(canh.nhom);
     const doThi = dungDoThi(layout);
+    const KHU_CAFE = khuTheoLoai(layout, 'cafe', 'cafe');   // café tìm theo loại khu (layout tự tạo đặt id khác vẫn chạy)
 
     // ── HUD giờ ──
     let hud = null;
@@ -183,7 +189,7 @@ export function createAgentHive(khung, o = {}) {
     const nv = new Map();
     /** @type {Map<string, any>} */
     const duLieu = new Map();
-    const choNgoiQL = taoQuanLyCho(layout);   // chỗ cố định + nhân viên phụ nhường agent (core/cho.js)
+    const choNgoiQL = taoQuanLyCho(layout);   // chỗ cố định + nhân viên phụ nhường agent (core/seats.js)
     const lucDoi = new Map();     // agentId -> lúc đổi trạng thái gần nhất (để chọn ai được hiện bóng chữ)
 
     /** Cho người `n` đi (hoặc đặt ngay) tới chỗ `cho`. Đang đi dở ⇒ đi nốt điểm kế rồi rẽ (không đi lùi / xuyên trời). */
@@ -199,7 +205,7 @@ export function createAgentHive(khung, o = {}) {
         const m = phu.find(x => x.a.id === id);
         if (!m) return;
         m.hen = performance.now() + 7000 + Math.random() * 9000;
-        const kq = choNgoiQL.lay('cafe', id);
+        const kq = KHU_CAFE ? choNgoiQL.lay(KHU_CAFE, id) : null;
         if (kq) diToiCho(m.n, kq.cho, false);
     };
     const apAgent = (a, { dauTien = false } = {}) => {
@@ -216,7 +222,7 @@ export function createAgentHive(khung, o = {}) {
         const ttCu = n.trangThai;
         n.datTrangThai(a.trangThai || 'ranh');
         if (ttCu !== n.trangThai) lucDoi.set(a.id, performance.now());
-        const khu = khuDich(a, layout) ?? (dauTien ? (timKhu(layout, a.phong) ? a.phong : 'cafe') : null);
+        const khu = khuDich(a, layout) ?? (dauTien ? (timKhu(layout, a.phong) ? a.phong : KHU_CAFE) : null);
         if (khu && choNgoiQL.khuCua(a.id) !== khu) {
             const kq = choNgoiQL.lay(khu, a.id);   // lấy chỗ mới trước, được mới nhả chỗ cũ
             if (kq) {
@@ -252,7 +258,7 @@ export function createAgentHive(khung, o = {}) {
             n.datNgay({ x: c.x * 0.9, z: c.z * 0.9 + 0.6, huong: Math.atan2(c.x, c.z) }, 'chinh');
         } else {
             // Phụ chỉ ngồi chỗ chuẩn còn trống; hết thì thử café, rồi tới khu bàn khác
-            const thu = [a.phong || (Math.random() < 0.5 ? 'cafe' : KHU_BAN[i % KHU_BAN.length]), 'cafe', ...KHU_BAN].filter(Boolean);
+            const thu = [a.phong || (Math.random() < 0.5 ? KHU_CAFE : KHU_BAN[i % KHU_BAN.length]), KHU_CAFE, ...KHU_BAN].filter(Boolean);
             for (const khu of thu) {
                 const kq = choNgoiQL.lay(khu, a.id);
                 if (kq) { n.datNgay(kq.cho, kq.cho.dao); break; }
@@ -261,9 +267,9 @@ export function createAgentHive(khung, o = {}) {
         if (giamChuyenDong) n.buoc(0);   // không có vòng hoạt cảnh ⇒ đặt tư thế (ngồi/đứng) ngay
         phu.push(m);
     }
-    // ── Quán café sống: NHÂN VIÊN PHA CHẾ sau quầy, mang cà phê ra bàn; cốc bốc khói (core/quanCafe.js) ──
+    // ── Quán café sống: NHÂN VIÊN PHA CHẾ sau quầy, mang cà phê ra bàn; cốc bốc khói (core/cafe.js) ──
     let quanCafe = null;
-    if (timKhu(layout, 'cafe')?.loai === 'cafe') {
+    if (KHU_CAFE) {
         const a = { id: `${TIEN_TO_PHU}pha-che`, ten: `${TEN_VAI_PHU['phuc-vu']} · ${chu.phu}`, vaiTro: 'npc', ngoaiHinh: { trangPhuc: 'phuc-vu', gioi: 'nu', toc: { kieu: 'duoi-ngua', mau: 'den' }, da: 'vang' } };
         const n = new NhanVat(a, { phu: true });
         n.datTrangThai('ranh');
@@ -297,7 +303,7 @@ export function createAgentHive(khung, o = {}) {
             if (m.n.dangDi || now < m.hen) continue;
             m.hen = now + 7000 + Math.random() * 9000;
             const r = Math.random();
-            const khu = m.a.phong && r < 0.45 ? m.a.phong : r < 0.7 ? 'cafe' : KHU_BAN[Math.floor(Math.random() * KHU_BAN.length)];
+            const khu = m.a.phong && r < 0.45 ? m.a.phong : r < 0.7 ? KHU_CAFE : KHU_BAN[Math.floor(Math.random() * KHU_BAN.length)];
             if (choNgoiQL.khuCua(m.a.id) === khu) continue;
             const kq = choNgoiQL.lay(khu, m.a.id);   // hết chỗ chuẩn ⇒ null, ngồi yên chỗ cũ
             if (kq) diToiCho(m.n, kq.cho, false);
@@ -599,7 +605,8 @@ export function createAgentHive(khung, o = {}) {
         setAgents(ds) {
             if (daHuy) return;
             const con = new Set();
-            for (const a of ds || []) {
+            for (const goc of ds || []) {
+                const a = chuanHoaAgent(goc, (k) => !!timKhu(layout, k));   // trường tiếng Anh (name, status, room…) ⇒ nội bộ
                 if (a?.id == null || a.id === '') continue;
                 con.add(a.id);
                 duLieu.set(a.id, a);
@@ -617,8 +624,9 @@ export function createAgentHive(khung, o = {}) {
             canDraw = true; batVong();
         },
         /** Sự kiện rời rạc: bat_dau · xong · loi · cho_duyet · duyet. */
-        pushEvent(ev) {
+        pushEvent(suKien) {
             if (daHuy) return;
+            const ev = chuanHoaSuKien(suKien);
             const a = duLieu.get(ev?.agentId);
             if (!a) return;
             const ma = { bat_dau: 'dang_chay', xong: 'ranh', loi: 'loi', cho_duyet: 'cho_duyet', duyet: 'dang_chay', can_xu_ly: 'can_xu_ly' }[ev.loai];
@@ -649,6 +657,8 @@ export function createAgentHive(khung, o = {}) {
         /** Tính lại bầu trời ngay (vd app vừa đổi giờ hiển thị) — bình thường tự cập nhật mỗi đầu phút. */
         refreshSky() { if (daHuy) return; apTroi(); batVong(); },
         /** Vị trí hiện tại của một agent (đảo, khu đang giữ chỗ, đang đi hay không) — để app gắn chú thích HTML / kiểm thử. */
+        /** Như viTri nhưng khoá tiếng Anh: { x, y, z, island, zone, walking, labelOffset } */
+        position(id) { return viTriEn(this.viTri(id)); },
         viTri(id) {
             const n = nv.get(id);
             if (!n) return null;
@@ -686,5 +696,23 @@ export function createAgentHive(khung, o = {}) {
     };
 }
 
-export { timDao, timKhu };
-export { moTaModel, MAU_HANG } from './core/model.js';
+export { timDao, timKhu, moTaModel, MAU_HANG };
+
+// ── English names for the helper exports (same functions; results translated to English keys) ──
+export const DEFAULT_LAYOUT = LAYOUT_MAC_DINH;
+export const findIsland = timDao;
+export const findZone = timKhu;
+export const dayPhase = buoiTheoGio;
+export const clockLabel = nhanGio;
+/** Sky colours for a moment: { top, bottom, sun, intensity, lightsOn, night, phase, hour } */
+export function skyAt(luc) {
+    const t = bauTroi(luc);
+    return { top: t.tren, bottom: t.duoi, sun: t.nang, intensity: t.manh, lightsOn: t.den, night: t.dem, phase: t.buoi, hour: t.gio };
+}
+/** Model badge info: { short, provider, logo, name } */
+export function describeModel(m) {
+    const k = moTaModel(m && typeof m === 'object' ? { ...m, ngan: m.ngan ?? m.short, hang: m.hang ?? m.provider, ten: m.ten ?? m.name } : m);
+    return k ? { short: k.ngan, provider: k.hang, logo: k.logo, name: k.ten } : null;
+}
+/** Provider badge colours: { anthropic: { color, letter }, … } */
+export const PROVIDER_COLORS = Object.fromEntries(Object.entries(MAU_HANG).map(([k, v]) => [k, { color: v.mau, letter: v.chu }]));

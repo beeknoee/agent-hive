@@ -6,8 +6,8 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { taoNhan, taoBong, huyNhan } from './nhan.js';
-import { ngoaiHinh } from './ngoaiHinh.js';
+import { taoNhan, taoBong, huyNhan } from './labels.js';
+import { ngoaiHinh } from './appearance.js';
 import { moTaModel, MAU_HANG } from './model.js';
 
 const VAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, flatShading: true });

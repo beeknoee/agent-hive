@@ -9,7 +9,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { BAN_CAFE, QUAY_CAFE, gheQuayCafe, timKhu } from './layout.js';
+import { BAN_CAFE, QUAY_CAFE, gheQuayCafe, timKhu, khuTheoLoai } from './layout.js';
 
 const SO_HAT = 3;
 const _m = new THREE.Matrix4(); const _q = new THREE.Quaternion(); const _s = new THREE.Vector3(); const _p = new THREE.Vector3();
@@ -45,8 +45,8 @@ function texKhoi() {
  *   phaChe = NhanVat của nhân viên pha chế (index.js tạo, có trong danh sách nhân viên phụ để rê chuột thấy tên)
  */
 export function taoQuanCafe(o) {
-    const k = timKhu(o.layout, 'cafe');
-    if (!k || k.loai !== 'cafe') return null;
+    const k = timKhu(o.layout, khuTheoLoai(o.layout, 'cafe', 'cafe'));
+    if (!k) return null;
     // Vị trí ghế (tương đối → thế giới) và chỗ đặt cốc ứng với từng ghế: ghế bàn ⇒ trên mặt bàn, lệch về phía khách 0,28;
     // ghế quầy ⇒ trên mặt quầy (cao 1,1) trước mặt khách
     const tx = Math.cos(QUAY_CAFE.ry); const tz = -Math.sin(QUAY_CAFE.ry);   // trục dài quầy
@@ -105,7 +105,7 @@ export function taoQuanCafe(o) {
         /** Gọi mỗi khung (dt giây). */
         capNhat(dt) {
             t += dt;
-            const ds = o.quanLyCho.dsKhu('cafe');
+            const ds = o.quanLyCho.dsKhu(k.id);
             // 1) Ghế nào có khách ĐÃ NGỒI (tới nơi, không còn đi) mà chưa có cốc ⇒ vào hàng; khách đi rồi ⇒ dọn cốc
             for (let i = 0; i < n; i++) {
                 const id = ds[i]; const nv = id != null ? o.nguoi(id) : null;
