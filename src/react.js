@@ -1,3 +1,4 @@
+'use client';
 /**
  * <AgentHive> — thin React wrapper around createAgentHive.
  *

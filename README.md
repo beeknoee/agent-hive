@@ -209,6 +209,12 @@ If a layout has no `meeting` zone, `awaiting_approval` agents stay at their desk
 
 Seats are stable: once given, a seat never moves. If a zone overflows, late arrivals stand beside the desks, always inside the island.
 
+## Using an AI coding assistant
+
+The repository ships an [AGENTS.md](AGENTS.md) written for AI assistants (Claude Code, Cursor, Copilot, Codex…). It explains how to map your data to agents, framework recipes (vanilla, React, Next.js, Vue/Svelte), custom layouts and a checklist of common mistakes. A prompt like this is usually enough:
+
+> Add agent-hive (github:beeknoee/agent-hive) to my dashboard. Read its AGENTS.md, map my agents/jobs to it and show the office on the overview page.
+
 ## Development
 
 ```bash
@@ -307,3 +313,9 @@ Tham số:
 - `?hour=17.7`: cố định giờ.
 
 Kiểm thử: `npm test`.
+
+### Nhờ AI cài giùm
+
+Repo có file [AGENTS.md](AGENTS.md) viết riêng cho trợ lý AI (Claude Code, Cursor, Copilot…): cách nối dữ liệu agent của bạn, mẫu cho từng framework, bố cục tự tạo, các lỗi hay gặp. Chỉ cần nhắn AI:
+
+> Cài agent-hive (github:beeknoee/agent-hive) vào dashboard của mình. Đọc AGENTS.md của nó, nối các agent / job của mình vào và hiện văn phòng ở trang tổng quan.
