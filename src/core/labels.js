@@ -49,6 +49,7 @@ function layLogo(url, khiXong) {
  * @param {{ nen?:string, mau?:string, coChu?:number, hoa?:boolean, dam?:boolean, cham?:string, khiVeLai?:()=>void,
  *           model?: { ngan:string, hang:string, logo?:string|null, mauHang?:{mau:string, chu:string} } | null }} o
  *   cham = màu chấm tròn bên trái (trạng thái) · model = huy hiệu [logo] viết-tắt NHỎ HƠN tên chính, đặt sau tên
+ *   Chấm NHÁY được (lỗi / cần xử lý): `sprite.userData.datSang(bool)` vẽ lại chấm sáng có quầng / tối mờ — chỉ vẽ khi đổi.
  */
 export function taoNhan(chu, o = {}) {
     const dpr = DPR();
@@ -77,6 +78,7 @@ export function taoNhan(chu, o = {}) {
     c.width = w; c.height = h;
 
     let daHuy = false;
+    let sang = null;   // null = chấm thường (không nháy) · true / false = pha sáng / tối khi nháy
     // MỘT hàm gọi lại cố định cho nhãn này (Set không cộng dồn); nhãn đã huỷ thì bỏ qua — không vẽ lên texture đã dispose
     const khiCoLogo = () => { if (daHuy) return; ve(); tex.needsUpdate = true; o.khiVeLai?.(); };
     const ve = () => {
@@ -85,8 +87,15 @@ export function taoNhan(chu, o = {}) {
         veVien(ctx, 0, 0, w, h, h / 2);
         ctx.fill();
         if (o.cham) {
-            ctx.fillStyle = o.cham;
-            ctx.beginPath(); ctx.arc(padX + 3 * dpr, h / 2, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+            const cx = padX + 3 * dpr; const cy = h / 2;
+            if (sang === true) {   // pha SÁNG của nháy: quầng cùng màu quanh chấm
+                ctx.fillStyle = o.cham; ctx.globalAlpha = 0.35;
+                ctx.beginPath(); ctx.arc(cx, cy, 6.5 * dpr, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+            ctx.fillStyle = o.cham; ctx.globalAlpha = sang === false ? 0.22 : 1;   // pha TỐI: chấm mờ hẳn
+            ctx.beginPath(); ctx.arc(cx, cy, (sang === true ? 4.2 : 3.5) * dpr, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
         }
         ctx.font = font; ctx.letterSpacing = `${gianCach}px`;
         ctx.fillStyle = o.mau || '#ffffff';
@@ -131,11 +140,12 @@ export function taoNhan(chu, o = {}) {
     s.userData.px = { w: w / dpr, h: h / dpr };   // cỡ CSS pixel mong muốn
     s.center.set(0.5, 0);                           // neo ở đáy giữa ⇒ đặt nhãn ngay trên đầu
     // huyNhan gọi: gỡ callback logo khỏi kho chung — không thì nhãn (và cả hive qua khiVeLai) bị giữ mãi khi logo nạp chậm / treo
+    s.userData.datSang = (v) => { if (daHuy || !o.cham || v === sang) return; sang = v; ve(); tex.needsUpdate = true; };
     s.userData.huy = () => { daHuy = true; if (m?.logo) KHO_LOGO.get(m.logo)?.cho.delete(khiCoLogo); };
     return s;
 }
 
-export const MAU_BONG = { chay: '#06b6d4', duyet: '#f59e0b', loi: '#ef4444', can: '#f43f5e' };
+export const MAU_BONG = { chay: '#06b6d4', duyet: '#f59e0b', loi: '#ef4444', can: '#f43f5e', chat: '#a78bfa' };   // chat = trò chuyện
 
 /**
  * Bóng chữ: nền trắng bo tròn + VẠCH MÀU bên trái theo kiểu (chạy / chờ duyệt / lỗi) + ĐUÔI nhọn chỉ xuống người nói.

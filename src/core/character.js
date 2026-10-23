@@ -12,23 +12,9 @@ import { moTaModel, MAU_HANG } from './model.js';
 
 const VAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, flatShading: true });
 const VAT_MO = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, flatShading: true, transparent: true, opacity: 0.45 });
-const GEO_CHAM = new THREE.SphereGeometry(0.15, 10, 8);
-const MAT_LOI = new THREE.MeshBasicMaterial({ color: '#ff3b3b' });
 const GEO_COC = new THREE.CylinderGeometry(0.07, 0.055, 0.12, 10);
 const VAT_COC = new THREE.MeshStandardMaterial({ color: '#f7f3ec', roughness: 0.6 });
 const MAU_CHAM = { ranh: '#94a3b8', dang_chay: '#22d3ee', cho_duyet: '#f59e0b', loi: '#ef4444', can_xu_ly: '#f43f5e', tat: '#475569' };
-// Quầng đỏ quanh chấm cảnh báo (cộng màu, dùng chung) — tạo lười lần đầu cần (cần document)
-let VAT_HAO = null;
-function vatHao() {
-    if (VAT_HAO) return VAT_HAO;
-    const c = document.createElement('canvas'); c.width = c.height = 64;
-    const ctx = c.getContext('2d'); const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    g.addColorStop(0, 'rgba(255,80,80,0.95)'); g.addColorStop(0.4, 'rgba(255,40,40,0.4)'); g.addColorStop(1, 'rgba(255,0,0,0)');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, 64, 64);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    VAT_HAO = new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
-    return VAT_HAO;
-}
 export const TOC_DO = 2.4;   // đơn vị / giây
 
 const _m = new THREE.Matrix4(); const _q = new THREE.Quaternion(); const _e = new THREE.Euler();
@@ -159,16 +145,9 @@ export class NhanVat {
         this.khung.scale.setScalar(this.h.cao || 1);
         this.goc.add(this.khung);
 
-        // CHẤM ĐỎ cảnh báo (lỗi / cần xử lý): cầu đỏ + quầng, NHÁY liên tục — nhìn là biết phải vào xem
-        this.chamLoi = new THREE.Group();
-        this.chamLoi.add(new THREE.Mesh(GEO_CHAM, MAT_LOI));
-        if (this.coNhan && typeof document !== 'undefined') {
-            const hao = new THREE.Sprite(vatHao()); hao.scale.setScalar(0.95); hao.renderOrder = 5;
-            this.chamLoi.add(hao); this.haoLoi = hao;
-        }
-        this.chamLoi.visible = false;
+        // Cảnh báo (lỗi / cần xử lý) = CHẤM TRẠNG THÁI TRONG NHÃN TÊN nháy liên tục (nháy đúng chấm ở tên, không phải một chấm rời).
+        // Bản trước: cầu đỏ + quầng riêng cạnh đầu.
         this.coCanhBao = false;
-        this.goc.add(this.chamLoi);
 
         this.ten = tenHien(agent);
         this.hienTam = false;   // đang được rê chuột / chọn ⇒ hiện nhãn dù rảnh
@@ -276,14 +255,11 @@ export class NhanVat {
         this.capNhatNhan(tt);
         this.capNhatHien();
         this.coCanhBao = tt === 'loi' || tt === 'can_xu_ly';
-        this.chamLoi.visible = this.coCanhBao;
-        // Đặt chỗ chấm NGAY (giảm chuyển động không gọi buoc() khi đứng yên ⇒ bản trước chấm nằm dưới chân)
-        this.datChamLoi();
         const vat = tt === 'tat' ? VAT_MO : VAT;
         this.than.material = vat; this.chanT.material = vat; this.chanP.material = vat;
     }
 
-    diToi(loTrinh, dich, daoDich) { this.duong = loTrinh.slice(); this.dich = dich; this.daoDich = daoDich; }
+    diToi(loTrinh, dich, daoDich) { this.duong = loTrinh.slice(); this.dich = dich; this.daoDich = daoDich; this.huongTam = null; }
 
     datNgay(dich, daoDich) {
         this.goc.position.set(dich.x, dich.y || 0, dich.z);
@@ -328,8 +304,9 @@ export class NhanVat {
             this.chanT.rotation.x = vung; this.chanP.rotation.x = -vung;
         } else {
             const d = this.dich || {};
-            if (d.huong != null) {
-                let lech = d.huong - this.goc.rotation.y;
+            const huong = this.huongTam ?? d.huong;   // huongTam: đang trò chuyện ⇒ quay mặt về người kia (không sửa chỗ ngồi dùng chung)
+            if (huong != null) {
+                let lech = huong - this.goc.rotation.y;
                 lech = Math.atan2(Math.sin(lech), Math.cos(lech));    // quay đường ngắn nhất
                 this.goc.rotation.y += lech * Math.min(1, dt * 6);
             }
@@ -343,18 +320,8 @@ export class NhanVat {
             this.nhay = Math.max(0, this.nhay - dt * 1.8);
             this.khung.position.y += Math.sin((1 - this.nhay) * Math.PI) * 0.45;
         }
-        if (this.coCanhBao) {
-            // Nháy ~1,1 lần/giây: tắt ngắn, sáng dài; quầng phập phồng
-            const pha = Math.sin(this.t * 7);
-            this.chamLoi.visible = pha > -0.35;
-            if (this.haoLoi) this.haoLoi.scale.setScalar(0.8 + 0.35 * Math.max(0, pha));
-            this.datChamLoi(Math.sin(this.t * 4) * 0.04);
-        }
-    }
-
-    // Chấm đỏ cạnh ĐẦU (ngang tai), không trên đỉnh: nhãn tên neo ngay trên đầu và vẽ đè mọi thứ ⇒ chấm trên đỉnh bị che
-    datChamLoi(nhun = 0) {
-        this.chamLoi.position.set(0.32, this.dinh - 0.08 + nhun, 0.2);   // hơi ra TRƯỚC mặt: đứng sau đầu thì bị che
+        // Nháy chấm trong nhãn ~1,1 lần/giây (sáng dài, tối ngắn) — chỉ vẽ lại texture lúc ĐỔI pha (≈ 2 lần/giây/người)
+        if (this.coCanhBao) this.nhan?.userData.datSang?.(Math.sin(this.t * 7) > -0.35);
     }
 
     huy() {

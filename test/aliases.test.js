@@ -35,9 +35,10 @@ test('English room id maps only when the layout has no zone of that name', () =>
 
 test('events, options, labels', () => {
     assert.deepEqual(chuanHoaSuKien({ agentId: 'a', type: 'done', task: 'x' }), { agentId: 'a', type: 'done', task: 'x', loai: 'xong', viec: 'x' });
-    const o = chuanHoaTuyChon({ language: 'en', shadows: true, quality: 'high', extraStaff: 4, legend: true, wheelZoom: 'ctrl', labels: { needsAttention: 'Needs you', roles: { barista: 'Barista' } } });
+    const o = chuanHoaTuyChon({ language: 'en', chiefWalks: false, shadows: true, quality: 'high', extraStaff: 4, legend: true, wheelZoom: 'ctrl', labels: { needsAttention: 'Needs you', roles: { barista: 'Barista' } } });
     assert.deepEqual([o.ngonNgu, o.bong, o.chatLuong, o.nhanVienPhu, o.chuThich, o.zoomCuon], ['en', true, 'cao', 4, true, 'ctrl']);
     assert.equal(o.chu.can, 'Needs you');
+    assert.equal(o.ceoDiDao, false);
     assert.equal(o.chu.vai['phuc-vu'], 'Barista');
     assert.deepEqual(chuanHoaChu({ agents: 'people' }), { nhanVien: 'people' });
 });

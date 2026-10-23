@@ -23,6 +23,7 @@ import { nenXa } from './core/textures.js';
 import { taoToaSang } from './core/bloom.js';
 import { chuanHoaAgent, chuanHoaSuKien, chuanHoaTuyChon, viTriEn } from './core/aliases.js';
 import { moTaModel, MAU_HANG } from './core/model.js';
+import { LOI_THOAI, timCap, thoiGianCau } from './core/chat.js';
 
 export { LAYOUT_MAC_DINH, LAYOUT_EN, bauTroi, nhanGio, buoiTheoGio };
 
@@ -223,6 +224,11 @@ export function createAgentHive(khung, tuyChon = {}) {
         n.datTrangThai(a.trangThai || 'ranh');
         if (ttCu !== n.trangThai) lucDoi.set(a.id, performance.now());
         const khu = khuDich(a, layout) ?? (dauTien ? (timKhu(layout, a.phong) ? a.phong : KHU_CAFE) : null);
+        const vong = vongCeo.get(a.id);
+        if (vong?.buoc) {
+            if (khu === KHU_CEO && coTheDiVong(a, n)) return;   // CEO đang đi vòng kiểm tra / uống cà phê — để vòng tự về bàn
+            vong.buoc = null; vong.ngoiTu = 0; vong.nghiBan = 30000;   // trạng thái đổi (lỗi, chờ duyệt…) ⇒ bỏ vòng, đi theo trạng thái
+        }
         if (khu && choNgoiQL.khuCua(a.id) !== khu) {
             const kq = choNgoiQL.lay(khu, a.id);   // lấy chỗ mới trước, được mới nhả chỗ cũ
             if (kq) {
@@ -310,6 +316,124 @@ export function createAgentHive(khung, tuyChon = {}) {
         }
     };
 
+    // ── TRÒ CHUYỆN: cứ 6–14 s ghép 2 người đứng / ngồi gần nhau (core/chat.js) cho văn phòng bớt cảnh ai cũng làm một mình —
+    //    nói 2–4 câu luân phiên bằng bóng chữ tím; người đang ĐỨNG quay mặt vào nhau. Tối đa 2 cuộc cùng lúc. CEO ghé bàn ⇒ hỏi han.
+    //    Tắt bằng `troChuyen: false` (en: `chatter: false`); đổi lời bằng `loiThoai` (en: `chatLines`).
+    const TRO_CHUYEN = o.troChuyen !== false && !giamChuyenDong;
+    const LOI = { ...(LOI_THOAI[o.ngonNgu] || LOI_THOAI.vi), ...(o.loiThoai || {}) };
+    const dangNoi = new Map();   // id → câu đang nói (agent: chonBong vẽ; nhân viên phụ: vẽ thẳng)
+    const cuocNoi = [];          // { ng: [{ id, n, phu }], cau: [...], i, het }
+    let henNoi = performance.now() + 4000 + Math.random() * 4000;
+    const trongCuoc = (id) => cuocNoi.some(c => c.ng.some(p => p.id === id));
+    const noi = (p, chu) => {
+        if (chu) dangNoi.set(p.id, chu); else dangNoi.delete(p.id);
+        if (p.phu) { p.n.datBong(chu || '', 'chat'); capNhatCoNhan(); } else chonBong();   // bóng mới phải đặt cỡ theo pixel
+        canDraw = true;
+    };
+    const ngoiCho = (n) => !!(n.dich?.ngoi || n.dich?.ban);
+    const batDauNoi = (a, b, cau) => {
+        if (!cau?.length || trongCuoc(a.id) || trongCuoc(b.id)) return;
+        for (const [x, y] of [[a, b], [b, a]]) {
+            if (!ngoiCho(x.n)) x.n.huongTam = Math.atan2(y.n.goc.position.x - x.n.goc.position.x, y.n.goc.position.z - x.n.goc.position.z);
+        }
+        cuocNoi.push({ ng: [a, b], cau, i: -1, het: 0 });
+    };
+    const ketThucNoi = (c) => {
+        for (const p of c.ng) { if (dangNoi.has(p.id)) noi(p, null); p.n.huongTam = null; }
+        cuocNoi.splice(cuocNoi.indexOf(c), 1);
+    };
+    const coTheNoi = (n) => !n.dangDi && n.trangThai !== 'loi' && n.trangThai !== 'can_xu_ly' && n.trangThai !== 'cho_duyet';
+    const troChuyen = (now) => {
+        if (!TRO_CHUYEN) return;
+        for (const c of [...cuocNoi]) {
+            if (c.ng.some(p => !coTheNoi(p.n) || (!p.phu && !nv.has(p.id)))) { ketThucNoi(c); continue; }
+            if (now < c.het) continue;
+            c.i++;
+            if (c.i >= c.cau.length) { ketThucNoi(c); continue; }
+            const ai = c.ng[c.i % 2]; const kia = c.ng[(c.i + 1) % 2];
+            if (dangNoi.has(kia.id)) noi(kia, null);
+            noi(ai, c.cau[c.i]);
+            c.het = now + thoiGianCau(c.cau[c.i]) + 300;
+        }
+        if (now < henNoi || cuocNoi.length >= 2 || !LOI.thuong?.length) return;
+        henNoi = now + 6000 + Math.random() * 8000;
+        const ung = [
+            ...[...nv.entries()].map(([id, n]) => ({ id, n, phu: false })),
+            ...phu.filter(m => !m.phaChe && !m.gac).map(m => ({ id: m.a.id, n: m.n, phu: true })),
+        ].filter(p => coTheNoi(p.n) && !trongCuoc(p.id) && !vongCeo.get(p.id)?.buoc)
+            .map(p => ({ ...p, x: p.n.goc.position.x, z: p.n.goc.position.z, dao: p.n.daoHienTai }));
+        const cap = timCap(ung);
+        if (cap) batDauNoi(cap[0], cap[1], LOI.thuong[Math.floor(Math.random() * LOI.thuong.length)]);
+    };
+
+    // ── CEO ĐI VÒNG (CEO không ngồi im một chỗ cả ngày): cứ 40–70 s, khi đang rảnh / đang chạy, CEO rời bàn,
+    //    ghé 1–2 nhân viên ĐANG LÀM (đứng ở lối đi sau ghế, nhìn vào màn hình 4–6 s), rồi ra café NGỒI một ghế trống (pha chế tự
+    //    mang cà phê ra) 11–16 s, xong về bàn. Giữ chỗ bàn CEO suốt lúc đi xem; chỉ nhả khi ngồi café (khu CEO chỉ mình CEO dùng).
+    //    Tắt bằng `ceoDiDao: false` (en: `chiefWalks: false`); giảm chuyển động ⇒ không đi.
+    const KHU_CEO = khuTheoLoai(layout, 'ceo', 'chief');
+    const CEO_DI = o.ceoDiDao !== false && !giamChuyenDong && !!KHU_CEO;
+    /** id CEO → { nghiBan: ngồi bàn bao lâu rồi mới đi, ngoiTu: lúc ngồi xuống, buoc: [{ loai:'xem', cho } | { loai:'cafe' }] | null, i, den, nghi } */
+    const vongCeo = new Map();
+    const coTheDiVong = (a, n) => CEO_DI && a?.vaiTro === 'chief' && (n.trangThai === 'ranh' || n.trangThai === 'dang_chay') && khuDich(a, layout) === KHU_CEO;
+    const lenVong = (id) => {
+        const lam = [...nv.entries()]
+            .filter(([k, x]) => k !== id && x.trangThai === 'dang_chay' && !x.dangDi && x.dich?.ban && x.dich.loi?.length === 2)
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 1 + Math.floor(Math.random() * 2));
+        const buoc = lam.map(([k, x]) => {
+            const [dau, sau] = x.dich.loi;   // lối đi sau lưng ghế: đầu lối → ngay sau ghế
+            // đứng lệch nửa bước bên cạnh, cùng hàng lối đi, quay mặt về phía bàn (−z)
+            return { loai: 'xem', ai: k, cho: { x: sau.x + 0.5, z: sau.z, dao: x.daoDich, huong: Math.PI, loi: [dau] } };
+        });
+        if (KHU_CAFE) buoc.push({ loai: 'cafe' });
+        return buoc;
+    };
+    const ceoDiVong = (now) => {
+        if (!CEO_DI) return;
+        for (const [id, n] of nv) {
+            const a = duLieu.get(id);
+            if (a?.vaiTro !== 'chief') continue;
+            let v = vongCeo.get(id);
+            if (!v) { vongCeo.set(id, v = { nghiBan: 12000 + Math.random() * 12000, ngoiTu: 0, buoc: null }); }
+            if (!coTheDiVong(a, n) || n.dangDi) { if (!v.buoc) v.ngoiTu = 0; continue; }
+            if (!v.buoc) {
+                // Thời gian nghỉ tính từ lúc NGỒI XUỐNG bàn (bản đầu tính từ lúc rời café ⇒ đi chậm thì vừa về tới bàn đã đi tiếp)
+                if (choNgoiQL.khuCua(id) !== KHU_CEO) continue;
+                if (!v.ngoiTu) { v.ngoiTu = now; continue; }
+                if (now - v.ngoiTu < v.nghiBan) continue;
+                v.buoc = lenVong(id); v.i = -1; v.den = 0; v.nghi = 0; v.ngoiTu = 0;
+            }
+            if (v.i >= 0) {                                   // đã tới bước hiện tại ⇒ đứng / ngồi đủ lâu rồi mới đi tiếp
+                if (!v.den) {
+                    v.den = now;
+                    // Tới sau lưng nhân viên ⇒ hỏi han (đứng đủ lâu cho hết câu chuyện)
+                    const b0 = v.buoc[v.i]; const nb = b0?.loai === 'xem' && nv.get(b0.ai);
+                    if (TRO_CHUYEN && nb && nb.trangThai === 'dang_chay' && LOI.ceo?.length) {
+                        const cau = LOI.ceo[Math.floor(Math.random() * LOI.ceo.length)];
+                        batDauNoi({ id, n, phu: false }, { id: b0.ai, n: nb, phu: false }, cau);
+                        v.nghi = Math.max(v.nghi, cau.reduce((t, c) => t + thoiGianCau(c) + 300, 0) + 500);
+                    }
+                    continue;
+                }
+                if (now - v.den < v.nghi) continue;
+            }
+            v.i++; v.den = 0;
+            const b = v.buoc[v.i];
+            if (!b) {                                          // hết vòng ⇒ về bàn CEO
+                const kq = choNgoiQL.lay(KHU_CEO, id);
+                if (kq) diToiCho(n, kq.cho, false);
+                v.buoc = null; v.ngoiTu = 0; v.nghiBan = 40000 + Math.random() * 30000;
+                continue;
+            }
+            if (b.loai === 'xem') { v.nghi = 4000 + Math.random() * 2500; diToiCho(n, b.cho, false); continue; }
+            const kq = choNgoiQL.lay(KHU_CAFE, id);            // café hết ghế ⇒ bỏ qua, về bàn ở lượt sau
+            if (!kq) { v.nghi = 0; v.den = now; continue; }
+            v.nghi = 11000 + Math.random() * 5000;
+            diToiCho(n, kq.cho, false);
+            if (kq.duoi) choPhuDi(kq.duoi);
+        }
+    };
+
     // Chỉ SO_BONG_TOI_DA agent đổi trạng thái gần nhất (đang chạy / chờ duyệt, có `viec`) được hiện bóng chữ.
     // lỗi cũng có bóng ("Lỗi · …"), và thứ tự là MỨC NGHIÊM TRỌNG trước (lỗi > chờ duyệt > đang chạy) rồi mới tới mới nhất —
     // bản 1 chỉ theo mới nhất nên một lỗi cũ bị ba việc vặt mới đẩy mất bóng.
@@ -328,7 +452,10 @@ export function createAgentHive(khung, tuyChon = {}) {
             .slice(0, SO_BONG_TOI_DA).map(n => n.id);
         for (const n of nv.values()) {
             const b = ung.includes(n.id) ? noiDungBong(n) : null;
-            n.datBong(b?.chu || '', b?.kieu);
+            // Đang nói ⇒ câu nói thay bóng VIỆC thường (đang chạy) trong lúc nói; bóng lỗi / cần xử lý / chờ duyệt vẫn ưu tiên
+            const c = dangNoi.get(n.id);
+            const hien = c && (!b || b.kieu === 'chay') ? { chu: c, kieu: 'chat' } : b;
+            n.datBong(hien?.chu || '', hien?.kieu);
         }
         capNhatCoNhan();
     };
@@ -539,6 +666,8 @@ export function createAgentHive(khung, tuyChon = {}) {
         if (!giamChuyenDong) {
             canh.troi(dt);
             langThang(now);
+            ceoDiVong(now);
+            troChuyen(now);
             for (const n of nv.values()) n.buoc(dt);
             for (const m of phu) m.n.buoc(dt);
             quanCafe?.capNhat(dt);
@@ -666,7 +795,7 @@ export function createAgentHive(khung, tuyChon = {}) {
             return { x: p.x, y: p.y, z: p.z, dao: n.daoHienTai, khu: choNgoiQL.khuCua(id) ?? null, dangDi: n.dangDi, dayNhan: n.dayNhan || 0 };
         },
         /** Thống kê để đo ngân sách hiệu năng. */
-        info() { return { drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, frames: renderer.info.render.frame, agents: nv.size, nhanVienPhu: phu.length, fps, toaSang: !!(toaSang && bloomBat && !haCap), haCap }; },
+        info() { return { drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles, frames: renderer.info.render.frame, agents: nv.size, nhanVienPhu: phu.length, fps, toaSang: !!(toaSang && bloomBat && !haCap), haCap, troChuyen: cuocNoi.map(c => ({ ai: c.ng.map(p => p.id), cau: c.cau[Math.max(0, c.i)] })) }; },
         dispose() {
             if (daHuy) return;
             daHuy = true;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — the office comes alive
+
+- The chief walks around: every 40–70 s (while idle or running) they look over 1–2 working agents' shoulders, sit at the café for a coffee, then go back to the CEO desk. Option `chiefWalks` (default `true`).
+- Small talk: now and then two people standing or sitting close together chat with purple speech bubbles (2–4 lines, Vietnamese or English); the chief asks how things are going when checking on someone. Options `chatter` (default `true`) and `chatLines` to supply your own lines. `info().troChuyen` lists the conversations in progress.
+- Alerts (`error` / `needs_attention`): the status dot **inside the name label** blinks, instead of a separate red sphere next to the head.
+
 ## 0.1.0 — first public release
 
 - 3D low-poly office: islands with LED trims and glass rails, café, meeting room, AI lab with a CEO desk, machine deck, QA lab, BD room, central planter.

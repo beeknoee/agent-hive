@@ -185,6 +185,12 @@ export interface HiveOptions {
     fps?: number;
     /** Clock used for the sky, default the machine clock (alias `gio`) */
     clock?: () => Date;
+    /** The chief (role: 'chief') leaves the CEO desk every 40–70 s to look over working agents' shoulders and have a coffee. Default true (alias `ceoDiDao`) */
+    chiefWalks?: boolean;
+    /** Now and then two people standing / sitting close together chat with speech bubbles; the chief chats when checking on someone. Default true (alias `troChuyen`) */
+    chatter?: boolean;
+    /** Replace the chat lines: each entry is a list of lines spoken alternately; `chief` lines start with the chief (alias `loiThoai`: { thuong, ceo }) */
+    chatLines?: { casual?: string[][]; chief?: string[][] };
     /** Click on an agent ⇒ its id; click on empty space while one is selected ⇒ null */
     onSelect?: (agentId: string | null) => void;
 
@@ -199,6 +205,9 @@ export interface HiveOptions {
     zoomCuon?: 'luon' | 'ctrl';
     tiLeNhan?: number;
     gio?: () => Date;
+    ceoDiDao?: boolean;
+    troChuyen?: boolean;
+    loiThoai?: { thuong?: string[][]; ceo?: string[][] };
 }
 /** @deprecated name kept for compatibility — use HiveOptions */
 export type TuyChon = HiveOptions;
@@ -225,7 +234,7 @@ export interface AgentHiveApi {
     /** Same as position() with Vietnamese keys */
     viTri(agentId: string): { x: number; y: number; z: number; dao: string | null; khu: string | null; dangDi: boolean; dayNhan: number } | null;
     /** Render stats */
-    info(): { drawCalls: number; triangles: number; frames: number; agents: number; nhanVienPhu: number; fps: number; toaSang: boolean; haCap: boolean };
+    info(): { drawCalls: number; triangles: number; frames: number; agents: number; nhanVienPhu: number; fps: number; toaSang: boolean; haCap: boolean; troChuyen: { ai: string[]; cau: string }[] };
     /** Remove everything and release the WebGL context */
     dispose(): void;
 }

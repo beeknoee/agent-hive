@@ -130,6 +130,9 @@ export function chuanHoaTuyChon(t = {}) {
     chep(o, t, 'wheelZoom', 'zoomCuon', WHEEL);
     chep(o, t, 'labelScale', 'tiLeNhan');
     chep(o, t, 'clock', 'gio');
+    chep(o, t, 'chiefWalks', 'ceoDiDao');
+    chep(o, t, 'chatter', 'troChuyen');
+    if (!co(t, 'loiThoai') && t.chatLines && typeof t.chatLines === 'object') o.loiThoai = { thuong: t.chatLines.casual, ceo: t.chatLines.chief };
     if (!co(t, 'chu') && co(t, 'labels')) o.chu = chuanHoaChu(t.labels);
     if (o.layout) o.layout = chuanHoaLayout(o.layout);
     return o;

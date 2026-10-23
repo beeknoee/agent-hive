@@ -20,7 +20,7 @@ Made by **[Beeknoee](https://beeknoee.com)**.
 
 - **Status → behaviour.** Give it a snapshot of your agents and they walk to the right place on their own: desk, meeting room, café, or the alert ring around the planter.
 - **Readable at a glance.** Name pills with a status dot and a model badge (Haiku → `HK`, Sonnet → `SN`, Opus → `OP`, …). Up to 3 speech bubbles at once, most urgent first. Labels avoid overlapping. Click a person **or their label** to select them.
-- **Lively, not noisy.** Optional extra staff: a security guard on patrol, a technician, and a barista who carries steaming coffee to the tables.
+- **Lively, not noisy.** The chief walks around to check on working agents and grabs a coffee; people nearby make small talk now and then. Optional extra staff: a security guard on patrol, a technician, and a barista who carries steaming coffee to the tables.
 - **Light.** At most 30 fps. Pauses when the tab is hidden or the canvas is off-screen. Static scene merged by material (about 66 draw calls). Respects `prefers-reduced-motion`. `dispose()` releases the WebGL context.
 - **Optional night bloom** (`quality: 'high'`) for full-screen use. It turns itself off on slow machines.
 - **English or Vietnamese UI.** The API has English names; the original Vietnamese names work too.
@@ -41,7 +41,7 @@ The package is installed straight from GitHub:
 npm install three github:beeknoee/agent-hive
 ```
 
-You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.0`.
+You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.1`.
 
 ## Quick start
 
@@ -139,6 +139,9 @@ Options are read **once**. To apply new options, change the component's `key`. T
 | `labelScale` | auto | Label scale. Shrinks automatically in short containers. |
 | `fps` | `30` | Frame-rate cap. |
 | `clock` | `() => new Date()` | Clock for the sky. Handy for demos and screenshots. |
+| `chatter` | `true` | Now and then two people close together chat with purple speech bubbles; the chief chats when checking on someone. |
+| `chatLines` | built-in | Your own lines: `{ casual: [['Hi!', 'Hello'], …], chief: [['How is it going?', 'Fine'], …] }` (lines alternate between the two speakers). |
+| `chiefWalks` | `true` | While idle or running, the chief leaves the CEO desk every 40–70 s, looks over 1–2 working agents' shoulders, has a coffee at the café, then goes back. |
 | `onSelect` | – | `(id \| null) => void` |
 
 ## API
@@ -298,7 +301,7 @@ hive.setAgents([
 | `name` · `status` · `room` · `role` · `task` · `appearance` | `ten` · `trangThai` · `phong` · `vaiTro` · `viec` · `ngoaiHinh` |
 | `idle` · `running` · `awaiting_approval` · `error` · `needs_attention` · `off` | `ranh` · `dang_chay` · `cho_duyet` · `loi` · `can_xu_ly` · `tat` |
 | phòng `customers` · `finance` · `infra` · `lab` | `khach-hang` · `tai-chinh` · `ha-tang` · `thu-vien` |
-| `language` · `labels` · `shadows` · `quality: 'high'` · `extraStaff` · `legend` · `controls` · `wheelZoom` · `labelScale` · `clock` | `ngonNgu` · `chu` · `bong` · `chatLuong: 'cao'` · `nhanVienPhu` · `chuThich` · `dieuKhien` · `zoomCuon` · `tiLeNhan` · `gio` |
+| `language` · `labels` · `shadows` · `quality: 'high'` · `extraStaff` · `legend` · `controls` · `wheelZoom` · `labelScale` · `clock` · `chiefWalks` · `chatter` · `chatLines` | `ngonNgu` · `chu` · `bong` · `chatLuong: 'cao'` · `nhanVienPhu` · `chuThich` · `dieuKhien` · `zoomCuon` · `tiLeNhan` · `gio` · `ceoDiDao` · `troChuyen` · `loiThoai` |
 | sự kiện `type: 'done'` · `task` | `loai: 'xong'` · `viec` |
 | `position(id)` | `viTri(id)` |
 
