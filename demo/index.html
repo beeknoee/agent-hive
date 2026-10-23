@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>agent-hive · demo</title>
+  <style>
+    :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; }
+    html, body { margin: 0; height: 100%; background: #0b1322; }
+    #hive { position: absolute; inset: 0; }
+    .bang { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: 60vw; }
+    .bang button { border: 0; border-radius: 999px; padding: 6px 12px; font: 700 11px inherit; letter-spacing: .08em;
+      background: rgba(17,17,20,.88); color: #fff; cursor: pointer; }
+    .bang button.on { background: #22d3ee; color: #0b1322; }
+    #info { position: absolute; left: 12px; top: 44px; padding: 6px 10px; border-radius: 8px; background: rgba(17,17,20,.78);
+      color: #cbd5e1; font: 12px ui-monospace, Consolas, monospace; }
+    .ghi-cong { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 4px 10px; border-radius: 999px;
+      background: rgba(17,17,20,.6); color: #cbd5e1; font-size: 11px; text-decoration: none; }
+    .ghi-cong:hover { color: #fff; }
+    #chon { position: absolute; right: 12px; bottom: 12px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.95);
+      color: #111; font-size: 13px; display: none; max-width: 300px; }
+  </style>
+</head>
+<body>
+  <div id="hive"></div>
+  <div class="bang">
+    <button data-gio="" class="on">TỰ ĐỘNG</button>
+    <button data-gio="9">SÁNG</button>
+    <button data-gio="17.7">CHIỀU</button>
+    <button data-gio="22">ĐÊM</button>
+  </div>
+  <div id="info"></div>
+  <div id="chon"></div>
+  <a class="ghi-cong" href="https://beeknoee.com" target="_blank" rel="noopener">agent-hive · made by Beeknoee</a>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
