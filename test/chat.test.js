@@ -20,7 +20,7 @@ test('chat pairs: same island, within distance', () => {
 });
 
 test('chat lines: both languages, every dialog has ≥ 2 lines, line time bounded', () => {
-    for (const ng of ['vi', 'en']) {
+    for (const ng of ['vi', 'en', 'zh']) {
         for (const loai of ['thuong', 'ceo']) {
             assert.ok(LOI_THOAI[ng][loai].length >= 4);
             for (const d of LOI_THOAI[ng][loai]) assert.ok(d.length >= 2 && d.every(c => c.length <= 40), `${ng}/${loai}: ${d}`);
@@ -34,4 +34,12 @@ test('chatter options in English', () => {
     const o = chuanHoaTuyChon({ chatter: false, chatLines: { casual: [['Hi', 'Hello']], chief: [['Status?', 'Fine']] } });
     assert.equal(o.troChuyen, false);
     assert.deepEqual(o.loiThoai, { thuong: [['Hi', 'Hello']], ceo: [['Status?', 'Fine']] });
+});
+
+test('Chinese: default layout names and labels', async () => {
+    const { LAYOUT_ZH, LAYOUT_MAC_DINH } = await import('../src/core/layout.js');
+    assert.equal(LAYOUT_ZH.dao.find(d => d.id === 'chinh').ten, '主办公区');
+    assert.equal(LAYOUT_ZH.khu.find(k => k.id === 'tai-chinh').ten, '财务');
+    assert.deepEqual(LAYOUT_ZH.khu.map(k => [k.id, k.x, k.z]), LAYOUT_MAC_DINH.khu.map(k => [k.id, k.x, k.z]), 'same positions');
+    assert.deepEqual(chuanHoaTuyChon({ labels: { phases: { dusk: 'Evening' } } }).chu, { buoi: { dusk: 'Evening' } });
 });

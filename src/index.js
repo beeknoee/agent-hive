@@ -11,7 +11,7 @@
  * in core/aliases.js. Code comments are in Vietnamese.
  */
 import * as THREE from 'three';
-import { LAYOUT_MAC_DINH, LAYOUT_EN, khuTheoLoai, dungDoThi, loTrinh, loTrinhDayDu, loTrinhDoiDich, khuDich, timKhu, timDao } from './core/layout.js';
+import { LAYOUT_MAC_DINH, LAYOUT_EN, LAYOUT_ZH, layoutTheoNgonNgu, khuTheoLoai, dungDoThi, loTrinh, loTrinhDayDu, loTrinhDoiDich, khuDich, timKhu, timDao } from './core/layout.js';
 import { taoQuanLyCho, TIEN_TO_PHU } from './core/seats.js';
 import { taoQuanCafe } from './core/cafe.js';
 import { dungCanh } from './core/scene.js';
@@ -25,7 +25,7 @@ import { chuanHoaAgent, chuanHoaSuKien, chuanHoaTuyChon, viTriEn } from './core/
 import { moTaModel, MAU_HANG } from './core/model.js';
 import { LOI_THOAI, timCap, thoiGianCau } from './core/chat.js';
 
-export { LAYOUT_MAC_DINH, LAYOUT_EN, bauTroi, nhanGio, buoiTheoGio };
+export { LAYOUT_MAC_DINH, LAYOUT_EN, LAYOUT_ZH, bauTroi, nhanGio, buoiTheoGio };
 
 const CO_KHUNG = 32;       // chiều cao khung nhìn (đơn vị thế giới) ở zoom = 1 — 40 thì nhân viên quá nhỏ
 const SO_BONG_TOI_DA = 3;  // tối đa bao nhiêu bóng chữ hiện cùng lúc — nhiều hơn là rối
@@ -39,26 +39,34 @@ const CHU = {
         nhanVien: 'nhân viên', dangLam: 'đang làm', canXuLy: 'cần xử lý', chuThich: ['Đang làm', 'Chờ duyệt', 'Lỗi', 'Cần xử lý', 'Rảnh'],
         loi: 'Lỗi', duyet: 'Chờ duyệt', can: 'Cần xử lý', phu: 'phụ',
         vai: { 'bao-ve': 'Bảo vệ', 'ky-thuat': 'Kỹ thuật viên', blouse: 'Kiểm thử viên', 'phuc-vu': 'Pha chế', khac: 'Nhân viên' },
+        buoi: { dawn: 'DAWN', day: 'DAY', dusk: 'DUSK', night: 'NIGHT' },
     },
     en: {
         nhanVien: 'agents', dangLam: 'working', canXuLy: 'need attention', chuThich: ['Working', 'Awaiting approval', 'Error', 'Needs attention', 'Idle'],
         loi: 'Error', duyet: 'Awaiting approval', can: 'Needs attention', phu: 'staff',
         vai: { 'bao-ve': 'Security', 'ky-thuat': 'Technician', blouse: 'Tester', 'phuc-vu': 'Barista', khac: 'Staff' },
+        buoi: { dawn: 'DAWN', day: 'DAY', dusk: 'DUSK', night: 'NIGHT' },
+    },
+    zh: {
+        nhanVien: '名员工', dangLam: '人工作中', canXuLy: '人需处理', chuThich: ['工作中', '待审批', '出错', '需处理', '空闲'],
+        loi: '出错', duyet: '待审批', can: '需处理', phu: '后勤',
+        vai: { 'bao-ve': '保安', 'ky-thuat': '技术员', blouse: '测试员', 'phuc-vu': '咖啡师', khac: '员工' },
+        buoi: { dawn: '黎明', day: '白天', dusk: '黄昏', night: '夜晚' },
     },
 };
 
 /**
  * @param {HTMLElement} khung
  * @param {{ layout?: any, fps?: number, bong?: boolean, hud?: boolean, chuThich?: boolean, dieuKhien?: boolean, zoom?: number, nhanVienPhu?: number,
- *           gio?: () => Date, ngonNgu?: 'vi'|'en', onSelect?: (id:string|null) => void }} o
+ *           gio?: () => Date, ngonNgu?: 'vi'|'en'|'zh', onSelect?: (id:string|null) => void }} o
  */
 export function createAgentHive(khung, tuyChon = {}) {
     const o = chuanHoaTuyChon(tuyChon);   // tuỳ chọn tiếng Anh (shadows, language, …) ⇒ tên nội bộ — core/aliases.js
-    const layout = o.layout || (o.ngonNgu === 'en' ? LAYOUT_EN : LAYOUT_MAC_DINH);
+    const layout = o.layout || layoutTheoNgonNgu(o.ngonNgu);
     const fps = Math.min(60, Math.max(10, o.fps || 30));
     const layGio = o.gio || (() => new Date());
     const goc = CHU[o.ngonNgu] || CHU.vi;
-    const chu = { ...goc, ...(o.chu || {}), vai: { ...goc.vai, ...(o.chu?.vai || {}) } };
+    const chu = { ...goc, ...(o.chu || {}), vai: { ...goc.vai, ...(o.chu?.vai || {}) }, buoi: { ...goc.buoi, ...(o.chu?.buoi || {}) } };
     const giamChuyenDong = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
     if (getComputedStyle(khung).position === 'static') khung.style.position = 'relative';
@@ -142,7 +150,9 @@ export function createAgentHive(khung, tuyChon = {}) {
         if (!hud) return;
         let lam = 0; let can = 0;
         for (const n of nv.values()) { if (n.trangThai === 'dang_chay') lam++; else if (n.trangThai === 'loi' || n.trangThai === 'can_xu_ly') can++; }
-        hud.innerHTML = `<span>${nhanGio(layGio())}</span><span style="letter-spacing:0.04em;font-weight:600;opacity:0.85">${nv.size} ${chu.nhanVien}${lam ? ` · ${lam} ${chu.dangLam}` : ''}${can ? ` · <b style="color:#f43f5e">${can} ${chu.canXuLy}</b>` : ''}</span>`;
+        const bay = layGio();
+        const gioChu = `${chu.buoi[buoiTheoGio(bay.getHours() + bay.getMinutes() / 60)]} · ${String(bay.getHours()).padStart(2, '0')}:${String(bay.getMinutes()).padStart(2, '0')}`;
+        hud.innerHTML = `<span>${gioChu}</span><span style="letter-spacing:0.04em;font-weight:600;opacity:0.85">${nv.size} ${chu.nhanVien}${lam ? ` · ${lam} ${chu.dangLam}` : ''}${can ? ` · <b style="color:#f43f5e">${can} ${chu.canXuLy}</b>` : ''}</span>`;
     };
     const apTroi = () => {
         const t = bauTroi(layGio());

@@ -113,7 +113,8 @@ export function chuanHoaChu(l) {
         if (k === 'roles' && v && typeof v === 'object') {
             const R = { security: 'bao-ve', technician: 'ky-thuat', tester: 'blouse', barista: 'phuc-vu', other: 'khac' };
             o.vai = Object.fromEntries(Object.entries(v).map(([r, t]) => [R[r] || r, t]));
-        } else o[K[k] || k] = v;
+        } else if (k === 'phases') o.buoi = v;
+        else o[K[k] || k] = v;
     }
     return o;
 }

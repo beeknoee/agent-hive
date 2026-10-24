@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 — 中文
+
+- Chinese UI: `language: 'zh'` translates the HUD (黄昏 · 17:42), legend, bubble prefixes, extra-staff roles, default room names (`LAYOUT_ZH`) and chat lines. `labels.phases` overrides the time-of-day words. Demo: `?lang=zh`.
+
 ## 0.1.1 — the office comes alive
 
 - The chief walks around: every 40–70 s (while idle or running) they look over 1–2 working agents' shoulders, sit at the café for a coffee, then go back to the CEO desk. Option `chiefWalks` (default `true`).

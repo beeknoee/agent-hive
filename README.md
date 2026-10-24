@@ -23,7 +23,7 @@ Made by **[Beeknoee](https://beeknoee.com)**.
 - **Lively, not noisy.** The chief walks around to check on working agents and grabs a coffee; people nearby make small talk now and then. Optional extra staff: a security guard on patrol, a technician, and a barista who carries steaming coffee to the tables.
 - **Light.** At most 30 fps. Pauses when the tab is hidden or the canvas is off-screen. Static scene merged by material (about 66 draw calls). Respects `prefers-reduced-motion`. `dispose()` releases the WebGL context.
 - **Optional night bloom** (`quality: 'high'`) for full-screen use. It turns itself off on slow machines.
-- **English or Vietnamese UI.** The API has English names; the original Vietnamese names work too.
+- **English, Vietnamese or Chinese UI** (`language: 'en' | 'vi' | 'zh'`): HUD, legend, bubbles, room names and chat lines. The API has English names; the original Vietnamese names work too.
 - **Clean licence.** No third-party 3D assets, fonts or brand logos are bundled.
 
 ## Requirements
@@ -41,7 +41,7 @@ The package is installed straight from GitHub:
 npm install three github:beeknoee/agent-hive
 ```
 
-You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.1`.
+You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.2`.
 
 ## Quick start
 
@@ -125,7 +125,7 @@ Options are read **once**. To apply new options, change the component's `key`. T
 
 | Option | Default | Description |
 |---|---|---|
-| `language` | `'vi'` | UI language for the HUD, legend, bubble prefixes and default room names: `'en'` or `'vi'`. |
+| `language` | `'vi'` | UI language for the HUD, legend, bubble prefixes, default room names and chat lines: `'en'`, `'vi'` or `'zh'` (Chinese). |
 | `labels` | – | Override UI strings, e.g. `{ needsAttention: 'Needs you', roles: { barista: 'Coffee' } }`. See `Labels` in `src/index.d.ts`. |
 | `layout` | default layout | Your own islands, zones and bridges (see below). |
 | `shadows` | `false` | Real-time shadows. Prettier and heavier, best for full-screen. |
@@ -161,7 +161,7 @@ Options are read **once**. To apply new options, change the component's `key`. T
 | `dispose()` | Remove everything and release the WebGL context. |
 
 Helpers:
-- `DEFAULT_LAYOUT` and `LAYOUT_EN`
+- `DEFAULT_LAYOUT`, `LAYOUT_EN` and `LAYOUT_ZH`
 - `findIsland` and `findZone`
 - `skyAt`, `dayPhase` and `clockLabel`
 - `describeModel` and `PROVIDER_COLORS`
@@ -228,7 +228,7 @@ npm run demo     # http://localhost:5190
 npm test         # unit tests (paths, seating, appearance, model badges, sky, English API, exports)
 ```
 
-Demo URL flags: `?lang=vi` for Vietnamese UI, `?bloom` for night bloom, `?hour=17.7` to fix the clock at 17:42.
+Demo URL flags: `?lang=vi` / `?lang=zh` for Vietnamese / Chinese UI, `?bloom` for night bloom, `?hour=17.7` to fix the clock at 17:42.
 
 ```
 src/
@@ -305,7 +305,7 @@ hive.setAgents([
 | sự kiện `type: 'done'` · `task` | `loai: 'xong'` · `viec` |
 | `position(id)` | `viTri(id)` |
 
-Mặc định giao diện là tiếng Việt (`language: 'vi'`).
+Mặc định giao diện là tiếng Việt (`language: 'vi'`); có thêm tiếng Anh (`'en'`) và tiếng Trung (`'zh'`).
 
 ### Chạy demo
 

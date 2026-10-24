@@ -54,11 +54,21 @@ const TEN_EN = {
     dao: { chinh: 'MAIN OFFICE', 'thu-vien': 'AI LAB · CEO', hop: 'MEETING ROOM', 'bd': 'BD · BUSINESS DEV', cafe: 'CAFÉ' },
     khu: { 'khach-hang': 'CUSTOMERS', 'tai-chinh': 'FINANCE', 'ha-tang': 'INFRA' },
 };
-export const LAYOUT_EN = {
+const doiTen = (ten) => ({
     ...LAYOUT_MAC_DINH,
-    dao: LAYOUT_MAC_DINH.dao.map(d => (TEN_EN.dao[d.id] ? { ...d, ten: TEN_EN.dao[d.id] } : d)),
-    khu: LAYOUT_MAC_DINH.khu.map(k => (TEN_EN.khu[k.id] ? { ...k, ten: TEN_EN.khu[k.id] } : k)),
-};
+    dao: LAYOUT_MAC_DINH.dao.map(d => (ten.dao[d.id] ? { ...d, ten: ten.dao[d.id] } : d)),
+    khu: LAYOUT_MAC_DINH.khu.map(k => (ten.khu[k.id] ? { ...k, ten: ten.khu[k.id] } : k)),
+});
+export const LAYOUT_EN = doiTen(TEN_EN);
+
+/** Bố cục mặc định với tên tiếng Trung — tự dùng khi `ngonNgu: 'zh'` và không truyền `layout`. */
+export const LAYOUT_ZH = doiTen({
+    dao: { chinh: '主办公区', may: '机房', 'thu-vien': 'AI 实验室 · CEO', hop: '会议室', qa: 'QA 实验室', bd: 'BD · 业务拓展', cafe: '咖啡厅' },
+    khu: { 'khach-hang': '客户', marketing: '市场', 'tai-chinh': '财务', code: '代码与部署', 'ha-tang': '基础设施', 'thu-vien': 'AI 实验室' },
+});
+
+/** Bố cục mặc định theo ngôn ngữ giao diện. */
+export const layoutTheoNgonNgu = (ngonNgu) => (ngonNgu === 'en' ? LAYOUT_EN : ngonNgu === 'zh' ? LAYOUT_ZH : LAYOUT_MAC_DINH);
 
 export const TRANG_THAI = ['ranh', 'dang_chay', 'cho_duyet', 'loi', 'can_xu_ly', 'tat'];
 

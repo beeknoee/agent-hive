@@ -146,19 +146,22 @@ export interface Labels {
     /** Suffix of extra-staff labels + role names */
     staff: string;
     roles: Partial<Record<'security' | 'technician' | 'tester' | 'barista' | 'other', string>>;
+    /** HUD time-of-day words */
+    phases: Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>;
 }
 /** Vietnamese keys for `chu` (same meaning as Labels) */
 export interface ChuGiaoDien {
     nhanVien: string; dangLam: string; canXuLy: string; chuThich: string[];
     loi: string; duyet: string; can: string;
     phu: string; vai: Partial<Record<'bao-ve' | 'ky-thuat' | 'blouse' | 'phuc-vu' | 'khac', string>>;
+    buoi: Partial<Record<'dawn' | 'day' | 'dusk' | 'night', string>>;
 }
 
 // ───────────────────────────── Options ─────────────────────────────
 
 export interface HiveOptions {
-    /** UI language: 'vi' (default) | 'en' (alias `ngonNgu`) */
-    language?: 'vi' | 'en';
+    /** UI language: 'vi' (default) | 'en' | 'zh' (Chinese) (alias `ngonNgu`) */
+    language?: 'vi' | 'en' | 'zh';
     /** Override individual UI strings (alias `chu`) */
     labels?: Partial<Labels>;
     /** Custom layout — English or internal format. Default: DEFAULT_LAYOUT (vi) / LAYOUT_EN (en) */
@@ -195,7 +198,7 @@ export interface HiveOptions {
     onSelect?: (agentId: string | null) => void;
 
     // Vietnamese names
-    ngonNgu?: 'vi' | 'en';
+    ngonNgu?: 'vi' | 'en' | 'zh';
     chu?: Partial<ChuGiaoDien>;
     bong?: boolean;
     chatLuong?: 'thuong' | 'cao';
@@ -249,6 +252,8 @@ export type DayPhase = 'dawn' | 'day' | 'dusk' | 'night';
 export const DEFAULT_LAYOUT: Layout;
 /** Default layout with English room names (used automatically when language: 'en') */
 export const LAYOUT_EN: Layout;
+/** Default layout with Chinese room names (used automatically when language: 'zh') */
+export const LAYOUT_ZH: Layout;
 export function findIsland(layout: Layout, id: string): Dao | undefined;
 export function findZone(layout: Layout, id: string): Khu | undefined;
 /** Sky colours at a moment */

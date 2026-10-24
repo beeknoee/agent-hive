@@ -112,7 +112,7 @@ Init options are read once; change the `key` prop to re-create with new options.
 
 | Option | Use |
 |---|---|
-| `language: 'en'` | English UI (default `'vi'`, Vietnamese) |
+| `language: 'en'` | English UI (`'vi'` Vietnamese is the default, `'zh'` Chinese) |
 | `legend: true` | colour legend |
 | `wheelZoom: 'ctrl'` | **use this when the office is a card inside a scrolling page**, otherwise the wheel zooms instead of scrolling |
 | `shadows: true`, `quality: 'high'` | prettier, for full-screen views only |
