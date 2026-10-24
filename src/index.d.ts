@@ -193,7 +193,7 @@ export interface HiveOptions {
     /** Now and then two people standing / sitting close together chat with speech bubbles; the chief chats when checking on someone. Default true (alias `troChuyen`) */
     chatter?: boolean;
     /** Replace the chat lines: each entry is a list of lines spoken alternately; `chief` lines start with the chief (alias `loiThoai`: { thuong, ceo }) */
-    chatLines?: { casual?: string[][]; chief?: string[][] };
+    chatLines?: { casual?: string[][]; work?: string[][]; cafe?: string[][]; evening?: string[][]; chief?: string[][]; /** `{viec}` is replaced by the agent's task */ chiefTask?: string[][] };
     /** Click on an agent ⇒ its id; click on empty space while one is selected ⇒ null */
     onSelect?: (agentId: string | null) => void;
 
@@ -210,7 +210,7 @@ export interface HiveOptions {
     gio?: () => Date;
     ceoDiDao?: boolean;
     troChuyen?: boolean;
-    loiThoai?: { thuong?: string[][]; ceo?: string[][] };
+    loiThoai?: { thuong?: string[][]; lamViec?: string[][]; cafe?: string[][]; toi?: string[][]; ceo?: string[][]; ceoViec?: string[][] };
 }
 /** @deprecated name kept for compatibility — use HiveOptions */
 export type TuyChon = HiveOptions;

@@ -133,7 +133,11 @@ export function chuanHoaTuyChon(t = {}) {
     chep(o, t, 'clock', 'gio');
     chep(o, t, 'chiefWalks', 'ceoDiDao');
     chep(o, t, 'chatter', 'troChuyen');
-    if (!co(t, 'loiThoai') && t.chatLines && typeof t.chatLines === 'object') o.loiThoai = { thuong: t.chatLines.casual, ceo: t.chatLines.chief };
+    if (!co(t, 'loiThoai') && t.chatLines && typeof t.chatLines === 'object') {
+        const c = t.chatLines;
+        o.loiThoai = Object.fromEntries(Object.entries({ thuong: c.casual, lamViec: c.work, cafe: c.cafe, toi: c.evening, ceo: c.chief, ceoViec: c.chiefTask })
+            .filter(([, v]) => v !== undefined));
+    }
     if (!co(t, 'chu') && co(t, 'labels')) o.chu = chuanHoaChu(t.labels);
     if (o.layout) o.layout = chuanHoaLayout(o.layout);
     return o;

@@ -23,7 +23,7 @@ import { nenXa } from './core/textures.js';
 import { taoToaSang } from './core/bloom.js';
 import { chuanHoaAgent, chuanHoaSuKien, chuanHoaTuyChon, viTriEn } from './core/aliases.js';
 import { moTaModel, MAU_HANG } from './core/model.js';
-import { LOI_THOAI, timCap, thoiGianCau } from './core/chat.js';
+import { LOI_THOAI, NGU_CANH, timCap, taoBoChon, dienViec, thoiGianCau } from './core/chat.js';
 
 export { LAYOUT_MAC_DINH, LAYOUT_EN, LAYOUT_ZH, bauTroi, nhanGio, buoiTheoGio };
 
@@ -330,7 +330,14 @@ export function createAgentHive(khung, tuyChon = {}) {
     //    nói 2–4 câu luân phiên bằng bóng chữ tím; người đang ĐỨNG quay mặt vào nhau. Tối đa 2 cuộc cùng lúc. CEO ghé bàn ⇒ hỏi han.
     //    Tắt bằng `troChuyen: false` (en: `chatter: false`); đổi lời bằng `loiThoai` (en: `chatLines`).
     const TRO_CHUYEN = o.troChuyen !== false && !giamChuyenDong;
-    const LOI = { ...(LOI_THOAI[o.ngonNgu] || LOI_THOAI.vi), ...(o.loiThoai || {}) };
+    // Lời thoại theo ngữ cảnh (core/chat.js). App truyền `loiThoai.thuong` ⇒ CHỈ dùng lời của app cho chuyện thường (ngữ cảnh khác
+    // của thư viện bỏ, trừ khi app truyền tiếp); không truyền ⇒ bộ mặc định của ngôn ngữ, ghi đè từng ngữ cảnh nếu có.
+    const LOI_GOC = LOI_THOAI[o.ngonNgu] || LOI_THOAI.vi;
+    const LOI_APP = o.loiThoai || {};
+    const LOI = Object.fromEntries(NGU_CANH.map(k => [k,
+        LOI_APP[k] ?? (LOI_APP.thuong && k !== 'ceo' ? [] : LOI_GOC[k] || [])]));
+    const chonDoan = taoBoChon();   // không lặp đoạn vừa nói gần đây
+    const KHU_CAFE_DAO = timKhu(layout, KHU_CAFE)?.dao;
     const dangNoi = new Map();   // id → câu đang nói (agent: chonBong vẽ; nhân viên phụ: vẽ thẳng)
     const cuocNoi = [];          // { ng: [{ id, n, phu }], cau: [...], i, het }
     let henNoi = performance.now() + 4000 + Math.random() * 4000;
@@ -365,7 +372,7 @@ export function createAgentHive(khung, tuyChon = {}) {
             noi(ai, c.cau[c.i]);
             c.het = now + thoiGianCau(c.cau[c.i]) + 300;
         }
-        if (now < henNoi || cuocNoi.length >= 2 || !LOI.thuong?.length) return;
+        if (now < henNoi || cuocNoi.length >= 2 || !(LOI.thuong.length || LOI.lamViec.length || LOI.cafe.length)) return;
         henNoi = now + 6000 + Math.random() * 8000;
         const ung = [
             ...[...nv.entries()].map(([id, n]) => ({ id, n, phu: false })),
@@ -373,7 +380,17 @@ export function createAgentHive(khung, tuyChon = {}) {
         ].filter(p => coTheNoi(p.n) && !trongCuoc(p.id) && !vongCeo.get(p.id)?.buoc)
             .map(p => ({ ...p, x: p.n.goc.position.x, z: p.n.goc.position.z, dao: p.n.daoHienTai }));
         const cap = timCap(ung);
-        if (cap) batDauNoi(cap[0], cap[1], LOI.thuong[Math.floor(Math.random() * LOI.thuong.length)]);
+        if (!cap) return;
+        // Ngữ cảnh: ở café ⇒ thêm chuyện café · có người đang làm ⇒ chuyện công việc · 17 h–5 h ⇒ chuyện buổi tối
+        const gio = layGio().getHours();
+        const ds = [
+            ...LOI.thuong,
+            ...(KHU_CAFE_DAO && cap.every(p => p.dao === KHU_CAFE_DAO) ? LOI.cafe : []),
+            ...(cap.some(p => p.n.trangThai === 'dang_chay') ? LOI.lamViec : []),
+            ...(gio >= 17 || gio < 5 ? LOI.toi : []),
+        ];
+        const doan = chonDoan(ds);
+        if (doan) batDauNoi(cap[0], cap[1], doan);
     };
 
     // ── CEO ĐI VÒNG (CEO không ngồi im một chỗ cả ngày): cứ 40–70 s, khi đang rảnh / đang chạy, CEO rời bàn,
@@ -418,8 +435,11 @@ export function createAgentHive(khung, tuyChon = {}) {
                     v.den = now;
                     // Tới sau lưng nhân viên ⇒ hỏi han (đứng đủ lâu cho hết câu chuyện)
                     const b0 = v.buoc[v.i]; const nb = b0?.loai === 'xem' && nv.get(b0.ai);
-                    if (TRO_CHUYEN && nb && nb.trangThai === 'dang_chay' && LOI.ceo?.length) {
-                        const cau = LOI.ceo[Math.floor(Math.random() * LOI.ceo.length)];
+                    if (TRO_CHUYEN && nb && nb.trangThai === 'dang_chay' && (LOI.ceo.length || LOI.ceoViec.length)) {
+                        // Một nửa số lần CEO hỏi ĐÚNG việc nhân viên đang làm ("Tối ưu quảng cáo" sao rồi?)
+                        const viec = duLieu.get(b0.ai)?.viec;
+                        const theoViec = viec && LOI.ceoViec.length && (Math.random() < 0.5 || !LOI.ceo.length);
+                        const cau = theoViec ? dienViec(chonDoan(LOI.ceoViec), viec) : chonDoan(LOI.ceo);
                         batDauNoi({ id, n, phu: false }, { id: b0.ai, n: nb, phu: false }, cau);
                         v.nghi = Math.max(v.nghi, cau.reduce((t, c) => t + thoiGianCau(c) + 300, 0) + 500);
                     }

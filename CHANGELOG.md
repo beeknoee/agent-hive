@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 — more small talk
+
+- Much more small talk: per language ~65 dialogs (casual, work, café, evening) + ~21 chief dialogs (vi · en · zh). Picked by context (café / someone working / evening), recently used dialogs are not repeated, and half the time the chief asks about the agent's actual task (`How is "Tune ad campaign" going?`). `chatLines` accepts `casual`, `work`, `cafe`, `evening`, `chief`, `chiefTask`.
+
 ## 0.1.2 — 中文
 
 - Chinese UI: `language: 'zh'` translates the HUD (黄昏 · 17:42), legend, bubble prefixes, extra-staff roles, default room names (`LAYOUT_ZH`) and chat lines. `labels.phases` overrides the time-of-day words. Demo: `?lang=zh`.

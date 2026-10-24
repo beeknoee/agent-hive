@@ -43,3 +43,38 @@ test('Chinese: default layout names and labels', async () => {
     assert.deepEqual(LAYOUT_ZH.khu.map(k => [k.id, k.x, k.z]), LAYOUT_MAC_DINH.khu.map(k => [k.id, k.x, k.z]), 'same positions');
     assert.deepEqual(chuanHoaTuyChon({ labels: { phases: { dusk: 'Evening' } } }).chu, { buoi: { dusk: 'Evening' } });
 });
+
+test('chat pools: every language has every context, enough lines, ≤ 40 chars, {viec} only in ceoViec', async () => {
+    const { NGU_CANH } = await import('../src/core/chat.js');
+    const toiThieu = { thuong: 20, lamViec: 15, cafe: 10, toi: 6, ceo: 12, ceoViec: 5 };
+    for (const ng of ['vi', 'en', 'zh']) {
+        for (const k of NGU_CANH) {
+            const ds = LOI_THOAI[ng][k];
+            assert.ok(ds.length >= toiThieu[k], `${ng}/${k}: only ${ds.length}`);
+            for (const d of ds) {
+                assert.ok(d.length >= 2, `${ng}/${k}: ${d}`);
+                for (const c of d) assert.ok(c.length <= 40, `${ng}/${k} too long: ${c}`);
+                assert.equal(d[0].includes('{viec}'), k === 'ceoViec', `${ng}/${k}: {viec} placement ${d[0]}`);
+            }
+        }
+        // same number of dialogs per context in every language (translations kept in sync)
+        for (const k of NGU_CANH) assert.equal(LOI_THOAI[ng][k].length, LOI_THOAI.vi[k].length, `${ng}/${k} out of sync with vi`);
+    }
+});
+
+test('dialog picker does not repeat recent dialogs; {viec} is filled and shortened', async () => {
+    const { taoBoChon, dienViec } = await import('../src/core/chat.js');
+    const chon = taoBoChon();
+    const ds = LOI_THOAI.vi.thuong;
+    const dau = [];
+    for (let i = 0; i < Math.floor(ds.length / 2); i++) dau.push(chon(ds)[0]);
+    assert.equal(new Set(dau).size, dau.length, 'no repeats within half the pool');
+    assert.deepEqual(dienViec(['"{viec}" sao rồi?', 'Ổn'], 'Tối ưu quảng cáo'), ['"Tối ưu quảng cáo" sao rồi?', 'Ổn']);
+    assert.ok(dienViec(['{viec}'], 'x'.repeat(60))[0].length <= 22);
+    assert.equal(chon([]), null);
+});
+
+test('chatLines English contexts map to internal ones', () => {
+    const o = chuanHoaTuyChon({ chatLines: { work: [['a', 'b']], evening: [['c', 'd']], chiefTask: [['{viec}?', 'ok']] } });
+    assert.deepEqual(Object.keys(o.loiThoai).sort(), ['ceoViec', 'lamViec', 'toi']);
+});

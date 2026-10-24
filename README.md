@@ -41,7 +41,7 @@ The package is installed straight from GitHub:
 npm install three github:beeknoee/agent-hive
 ```
 
-You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.2`.
+You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.3`.
 
 ## Quick start
 
@@ -140,7 +140,7 @@ Options are read **once**. To apply new options, change the component's `key`. T
 | `fps` | `30` | Frame-rate cap. |
 | `clock` | `() => new Date()` | Clock for the sky. Handy for demos and screenshots. |
 | `chatter` | `true` | Now and then two people close together chat with purple speech bubbles; the chief chats when checking on someone. |
-| `chatLines` | built-in | Your own lines: `{ casual: [['Hi!', 'Hello'], …], chief: [['How is it going?', 'Fine'], …] }` (lines alternate between the two speakers). |
+| `chatLines` | built-in | Your own lines, by context: `casual`, `work` (someone is running), `cafe` (both at the café), `evening` (17:00–05:00), `chief`, `chiefTask` (`{viec}` = the agent's task). Each entry is a list of lines spoken alternately, e.g. `{ casual: [['Hi!', 'Hello'], …] }`. Built-in: ~65 casual-type dialogs + ~21 chief dialogs per language, never repeating recent ones. |
 | `chiefWalks` | `true` | While idle or running, the chief leaves the CEO desk every 40–70 s, looks over 1–2 working agents' shoulders, has a coffee at the café, then goes back. |
 | `onSelect` | – | `(id \| null) => void` |
 
