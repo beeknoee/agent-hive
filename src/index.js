@@ -104,6 +104,7 @@ export function createAgentHive(khung, tuyChon = {}) {
     scene.add(hemi, nang);
 
     const canh = dungCanh(layout, { bong: o.bong });
+    if (o.heThong) canh.datHeThong(o.heThong);   // tình trạng hệ thống ban đầu ⇒ màu tủ server (datHeThong)
     // Chất lượng CAO (toàn màn hình): toả sáng ban đêm, nạp động; máy không giữ nổi ~22 fps thì TỰ TẮT toả sáng (haCap)
     const chatCao = o.chatLuong === 'cao' && !giamChuyenDong;
     let toaSang = null; let bloomBat = false; let haCap = false; let emaKhung = 33; let soKhungCham = 0;
@@ -816,6 +817,12 @@ export function createAgentHive(khung, tuyChon = {}) {
         /** Tính lại bầu trời ngay (vd app vừa đổi giờ hiển thị) — bình thường tự cập nhật mỗi đầu phút. */
         refreshSky() { if (daHuy) return; apTroi(); batVong(); },
         /** Vị trí hiện tại của một agent (đảo, khu đang giữ chỗ, đang đi hay không) — để app gắn chú thích HTML / kiểm thử. */
+        /**
+         * Tình trạng hệ thống ⇒ tủ server ở khu máy (`may`): 'ok' xanh lá phát sáng · 'loi' đỏ nháy xen vàng · null mặc định.
+         * (en: setSystemStatus('ok' | 'error' | null))
+         */
+        datHeThong(tt) { if (daHuy) return; canh.datHeThong(tt); canDraw = true; batVong(); },
+        setSystemStatus(s) { this.datHeThong(s === 'error' ? 'loi' : s); },
         /** Như viTri nhưng khoá tiếng Anh: { x, y, z, island, zone, walking, labelOffset } */
         position(id) { return viTriEn(this.viTri(id)); },
         viTri(id) {

@@ -41,7 +41,7 @@ The package is installed straight from GitHub:
 npm install three github:beeknoee/agent-hive
 ```
 
-You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.3`.
+You can pin a tag or commit: `github:beeknoee/agent-hive#v0.1.4`.
 
 ## Quick start
 
@@ -139,6 +139,7 @@ Options are read **once**. To apply new options, change the component's `key`. T
 | `labelScale` | auto | Label scale. Shrinks automatically in short containers. |
 | `fps` | `30` | Frame-rate cap. |
 | `clock` | `() => new Date()` | Clock for the sky. Handy for demos and screenshots. |
+| `systemStatus` | `null` | Server racks in the machine room show your system health: `'ok'` green glow · `'error'` red blinking with yellow · `null` default look. Change it later with `setSystemStatus()`. |
 | `chatter` | `true` | Now and then two people close together chat with purple speech bubbles; the chief chats when checking on someone. |
 | `chatLines` | built-in | Your own lines, by context: `casual`, `work` (someone is running), `cafe` (both at the café), `evening` (17:00–05:00), `chief`, `chiefTask` (`{viec}` = the agent's task). Each entry is a list of lines spoken alternately, e.g. `{ casual: [['Hi!', 'Hello'], …] }`. Built-in: ~65 casual-type dialogs + ~21 chief dialogs per language, never repeating recent ones. |
 | `chiefWalks` | `true` | While idle or running, the chief leaves the CEO desk every 40–70 s, looks over 1–2 working agents' shoulders, has a coffee at the café, then goes back. |
@@ -156,6 +157,7 @@ Options are read **once**. To apply new options, change the component's `key`. T
 | `select(id \| null)` | Highlight ring under an agent. |
 | `setZoom(zoom, x?, z?)` | Zoom, optionally around a point. |
 | `position(id)` | `{ x, y, z, island, zone, walking }`, or `null`. |
+| `setSystemStatus('ok' \| 'error' \| null)` | Server racks: green glow when your systems are healthy, red blinking with yellow on errors. |
 | `refreshSky()` | Recompute the sky now, e.g. after changing your `clock`. |
 | `info()` | Draw calls, triangles, fps cap, bloom state. |
 | `dispose()` | Remove everything and release the WebGL context. |
@@ -228,7 +230,7 @@ npm run demo     # http://localhost:5190
 npm test         # unit tests (paths, seating, appearance, model badges, sky, English API, exports)
 ```
 
-Demo URL flags: `?lang=vi` / `?lang=zh` for Vietnamese / Chinese UI, `?bloom` for night bloom, `?hour=17.7` to fix the clock at 17:42.
+Demo URL flags: `?lang=vi` / `?lang=zh` for Vietnamese / Chinese UI, `?system=ok` / `?system=error` for the server racks, `?bloom` for night bloom, `?hour=17.7` to fix the clock at 17:42.
 
 ```
 src/
@@ -301,7 +303,7 @@ hive.setAgents([
 | `name` · `status` · `room` · `role` · `task` · `appearance` | `ten` · `trangThai` · `phong` · `vaiTro` · `viec` · `ngoaiHinh` |
 | `idle` · `running` · `awaiting_approval` · `error` · `needs_attention` · `off` | `ranh` · `dang_chay` · `cho_duyet` · `loi` · `can_xu_ly` · `tat` |
 | phòng `customers` · `finance` · `infra` · `lab` | `khach-hang` · `tai-chinh` · `ha-tang` · `thu-vien` |
-| `language` · `labels` · `shadows` · `quality: 'high'` · `extraStaff` · `legend` · `controls` · `wheelZoom` · `labelScale` · `clock` · `chiefWalks` · `chatter` · `chatLines` | `ngonNgu` · `chu` · `bong` · `chatLuong: 'cao'` · `nhanVienPhu` · `chuThich` · `dieuKhien` · `zoomCuon` · `tiLeNhan` · `gio` · `ceoDiDao` · `troChuyen` · `loiThoai` |
+| `language` · `labels` · `shadows` · `quality: 'high'` · `extraStaff` · `legend` · `controls` · `wheelZoom` · `labelScale` · `clock` · `chiefWalks` · `chatter` · `chatLines` · `systemStatus` / `setSystemStatus()` | `ngonNgu` · `chu` · `bong` · `chatLuong: 'cao'` · `nhanVienPhu` · `chuThich` · `dieuKhien` · `zoomCuon` · `tiLeNhan` · `gio` · `ceoDiDao` · `troChuyen` · `loiThoai` · `heThong` / `datHeThong()` |
 | sự kiện `type: 'done'` · `task` | `loai: 'xong'` · `viec` |
 | `position(id)` | `viTri(id)` |
 

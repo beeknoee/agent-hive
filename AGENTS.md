@@ -117,6 +117,7 @@ Init options are read once; change the `key` prop to re-create with new options.
 | `wheelZoom: 'ctrl'` | **use this when the office is a card inside a scrolling page**, otherwise the wheel zooms instead of scrolling |
 | `shadows: true`, `quality: 'high'` | prettier, for full-screen views only |
 | `extraStaff: 0` | no decorative walkers (default 10) |
+| `systemStatus: 'ok' \| 'error'` | server racks glow green / blink red-yellow; update with `hive.setSystemStatus()` from the user's health checks |
 | `labels: { … }` | rename UI strings, e.g. `{ needsAttention: 'Needs you' }` |
 | `layout` | custom islands and zones (see below) |
 

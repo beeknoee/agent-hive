@@ -1,6 +1,6 @@
 {
   "name": "agent-hive",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Low-poly 3D office for AI agent teams — each agent is an employee who walks, works and gathers by real status (Three.js). Made by Beeknoee.",
   "author": "Beeknoee (https://beeknoee.com)",
   "homepage": "https://github.com/beeknoee/agent-hive#readme",

@@ -3,6 +3,7 @@
 import { createAgentHive } from '../src/index.js';
 
 // URL flags: ?lang=vi | ?lang=zh (Vietnamese / Chinese UI, default English) · ?bloom (night bloom) · ?hour=17.7 (fixed clock, 17:42)
+// · ?system=ok | ?system=error (server racks green / blinking red-yellow)
 // (?cao and ?gio=17.7 are accepted as aliases of ?bloom and ?hour)
 const q = new URLSearchParams(location.search);
 const LANG = ['vi', 'zh'].includes(q.get('lang')) ? q.get('lang') : 'en';
@@ -62,6 +63,7 @@ const hive = createAgentHive(document.getElementById('hive'), {
     legend: true,
     quality: q.has('bloom') || q.has('cao') ? 'high' : 'normal',
     extraStaff: 10,
+    systemStatus: ['ok', 'error'].includes(q.get('system')) ? q.get('system') : null,   // ?system=ok|error ⇒ server racks
     clock: () => {
         if (fixedHour == null) return new Date();
         const d = new Date(); d.setHours(Math.floor(fixedHour), Math.round((fixedHour % 1) * 60), 0, 0); return d;

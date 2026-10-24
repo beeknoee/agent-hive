@@ -192,6 +192,8 @@ export interface HiveOptions {
     chiefWalks?: boolean;
     /** Now and then two people standing / sitting close together chat with speech bubbles; the chief chats when checking on someone. Default true (alias `troChuyen`) */
     chatter?: boolean;
+    /** Initial system status shown on the server racks: 'ok' (green glow) · 'error' (red blinking with yellow) · null (default) (alias `heThong`: 'ok' | 'loi') */
+    systemStatus?: 'ok' | 'error' | null;
     /** Replace the chat lines: each entry is a list of lines spoken alternately; `chief` lines start with the chief (alias `loiThoai`: { thuong, ceo }) */
     chatLines?: { casual?: string[][]; work?: string[][]; cafe?: string[][]; evening?: string[][]; chief?: string[][]; /** `{viec}` is replaced by the agent's task */ chiefTask?: string[][] };
     /** Click on an agent ⇒ its id; click on empty space while one is selected ⇒ null */
@@ -210,6 +212,7 @@ export interface HiveOptions {
     gio?: () => Date;
     ceoDiDao?: boolean;
     troChuyen?: boolean;
+    heThong?: 'ok' | 'loi' | null;
     loiThoai?: { thuong?: string[][]; lamViec?: string[][]; cafe?: string[][]; toi?: string[][]; ceo?: string[][]; ceoViec?: string[][] };
 }
 /** @deprecated name kept for compatibility — use HiveOptions */
@@ -230,6 +233,10 @@ export interface AgentHiveApi {
     setZoom(zoom: number, centerX?: number, centerZ?: number): void;
     /** Highlight ring under an agent — null to clear */
     select(agentId: string | null): void;
+    /** Server racks show the system status: 'ok' green glow · 'error' red blinking with yellow · null default look */
+    setSystemStatus(status: 'ok' | 'error' | null): void;
+    /** Same as setSystemStatus with Vietnamese values: 'ok' | 'loi' | null */
+    datHeThong(trangThai: 'ok' | 'loi' | null): void;
     /** Recompute the sky now (e.g. after changing your `clock`) */
     refreshSky(): void;
     /** Current position — null if no such agent */

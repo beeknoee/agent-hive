@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4 — system status on the server racks
+
+- System status on the server racks: `systemStatus` option / `setSystemStatus('ok' | 'error' | null)` (vi: `heThong` / `datHeThong('ok' | 'loi')`). `ok` = racks glow green with light pools on the floor, `error` = red blinking with yellow. Dedicated rack materials (no longer shared with the AI-lab hologram). Demo: `?system=ok|error`.
+
 ## 0.1.3 — more small talk
 
 - Much more small talk: per language ~65 dialogs (casual, work, café, evening) + ~21 chief dialogs (vi · en · zh). Picked by context (café / someone working / evening), recently used dialogs are not repeated, and half the time the chief asks about the agent's actual task (`How is "Tune ad campaign" going?`). `chatLines` accepts `casual`, `work`, `cafe`, `evening`, `chief`, `chiefTask`.

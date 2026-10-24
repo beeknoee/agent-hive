@@ -169,6 +169,11 @@ export function dungCanh(layout, o = {}) {
         nao: M('#ffd68a', { emissive: '#ffb84d', emissiveIntensity: 0.9 }),
         tuMay: M('#2c303a', { roughness: 0.5, metalness: 0.3 }),
         led: SANG('#34d399'), ledLam: SANG('#38bdf8'),
+        // Tủ server — đổi màu theo TÌNH TRẠNG HỆ THỐNG (datHeThong): mặc định xanh lá / xanh dương xen kẽ · ok = xanh lá + phát sáng ·
+        // lỗi = đỏ nháy xen vàng. Quầng trước mặt tủ + vệt sáng hắt xuống sàn (cộng màu, không tốn đèn thật).
+        ledTu1: SANG('#34d399'), ledTu2: SANG('#38bdf8'),
+        quangTu: new THREE.MeshBasicMaterial({ map: tQuang, color: '#34d399', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, opacity: 0 }),
+        vetTu: new THREE.MeshBasicMaterial({ map: tQuang, color: '#34d399', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }),
         buc: M('#f5efe6', { emissive: '#ff9a3d', emissiveIntensity: 0.35 }),
         menu: new THREE.MeshBasicMaterial({ color: '#2b2f3a' }),
         gheBanh: M('#5b7c99'), sofa: M('#e9e4da'), sofaToi: M('#3b4256'), goi: M('#c2703d'),
@@ -207,8 +212,8 @@ export function dungCanh(layout, o = {}) {
     const thanhLC = new Bo(new THREE.BoxGeometry(1, 0.035, 0.035), vat.ledAm, { bong: false });      // tay vịn = dải LED ấm
     const kinhLC = new Bo(new THREE.BoxGeometry(1, 0.5, 0.015), vat.kinhLC, { bong: false });       // tấm kính lan can
     const tu = new Bo(new THREE.BoxGeometry(0.9, 1.9, 0.7), vat.tuMay);
-    const ledTu = new Bo(new THREE.BoxGeometry(0.55, 0.035, 0.02), vat.led, { bong: false });
-    const ledTu2 = new Bo(new THREE.BoxGeometry(0.55, 0.035, 0.02), vat.ledLam, { bong: false });
+    const ledTu = new Bo(new THREE.BoxGeometry(0.55, 0.035, 0.02), vat.ledTu1, { bong: false });
+    const ledTu2 = new Bo(new THREE.BoxGeometry(0.55, 0.035, 0.02), vat.ledTu2, { bong: false });
     const lamMat = new Bo(new THREE.BoxGeometry(1.1, 0.9, 1.1), vat.trang);
     const ke = new Bo(new THREE.BoxGeometry(1.6, 2, 0.4), vat.go);
     const sach = new Bo(new THREE.BoxGeometry(1.4, 0.26, 0.3), vat.goi, { bong: false });            // gáy sách trên kệ
@@ -431,6 +436,16 @@ export function dungCanh(layout, o = {}) {
                 tu.them(k.x - 2.4 + i * 1.05, 0.95, k.z - 1.8); bong(k.x - 2.4 + i * 1.05, k.z - 1.8, 1.3, 1.1);
                 for (let j = 0; j < 7; j++) (i % 2 ? ledTu2 : ledTu).them(k.x - 2.4 + i * 1.05, 0.45 + j * 0.2, k.z - 1.8 + 0.36);
             }
+            // Quầng sáng trước mặt mỗi tủ + vệt sáng hắt xuống sàn trước dãy tủ (chỉ hiện khi datHeThong 'ok' / 'loi')
+            for (let i = 0; i < 4; i++) {
+                const x = k.x - 2.4 + i * 1.05;
+                // quầng TRÒN mềm (hoạ tiết toả) lớn hơn mặt tủ — sáng giữa, nhạt ra viền ⇒ trông như tủ phát sáng
+                const q = dat(new THREE.PlaneGeometry(1.9, 2.8), vat.quangTu, x, 1.0, k.z - 1.8 + 0.45, 0, false);
+                q.renderOrder = 3; q.userData.dong = true;
+                // vệt sáng hắt xuống sàn ngay trước chân tủ
+                const v = dat(new THREE.PlaneGeometry(1.8, 1.8), vat.vetTu, x, 0.03, k.z - 1.8 + 1.0, 0, false);
+                v.rotation.x = -Math.PI / 2; v.renderOrder = 3; v.userData.dong = true;
+            }
             lamMat.them(k.x - 3, 0.45, k.z + 0.6); lamMat.them(k.x - 3, 0.45, k.z + 1.9);
             bong(k.x - 3, k.z + 1.25, 1.6, 2.9);
         } else if (k.loai === 'hop') {
@@ -548,8 +563,30 @@ export function dungCanh(layout, o = {}) {
     datMay();
     nhom.add(imMay);
 
+    // ── Tình trạng hệ thống → màu tủ server ──
+    let heThong = null; let tHeThong = 0; let phaHeThong = -1;
+    const MAU_TU = { ok: '#22e07a', do: '#ff3b3b', vang: '#ffc233' };
+    const toTu = (mau, sang) => {
+        vat.ledTu1.color.set(mau); vat.ledTu2.color.set(mau);
+        vat.quangTu.color.set(mau); vat.vetTu.color.set(mau);
+        vat.quangTu.opacity = sang * 0.85; vat.vetTu.opacity = sang;
+    };
+    const apHeThong = () => {
+        if (heThong === 'ok') toTu(MAU_TU.ok, 1);
+        else if (heThong === 'loi') toTu(MAU_TU.do, 1);
+        else { vat.ledTu1.color.set('#34d399'); vat.ledTu2.color.set('#38bdf8'); vat.quangTu.opacity = 0; vat.vetTu.opacity = 0; }
+    };
+
     return {
         nhom,
+        /** 'ok' = tủ xanh lá phát sáng · 'loi' = đỏ nháy xen vàng · null = mặc định (xanh lá / xanh dương, không quầng). */
+        datHeThong(tt) {
+            const moi = tt === 'ok' || tt === 'loi' ? tt : null;
+            if (moi === heThong) return;
+            heThong = moi; tHeThong = 0; phaHeThong = -1;
+            apHeThong();
+        },
+        heThong: () => heThong,
         capNhatDen(bat) {
             quang.visible = bat;
             vat.denDuong.emissiveIntensity = bat ? 1.6 : 0.2;
@@ -569,6 +606,12 @@ export function dungCanh(layout, o = {}) {
          */
         datCoDiem(pxMoiDonVi) { quang.material.size = 2.4 * pxMoiDonVi; },
         troi(dt) {
+            // Lỗi: đỏ ↔ vàng, nhịp 0,45 s (gián đoạn) — chỉ đổi màu khi sang pha mới
+            if (heThong === 'loi') {
+                tHeThong += dt;
+                const pha = Math.floor(tHeThong / 0.45) % 2;
+                if (pha !== phaHeThong) { phaHeThong = pha; toTu(pha ? MAU_TU.vang : MAU_TU.do, pha ? 0.7 : 1); }
+            }
             for (const m of dsMay) { m.p.x += m.v * dt; if (m.p.x > 52) m.p.x -= 104; }
             datMay();
             for (const d of dong) { d.o.rotation.x += d.xoay[0] * dt; d.o.rotation.y += d.xoay[1] * dt; d.o.rotation.z += d.xoay[2] * dt; }
